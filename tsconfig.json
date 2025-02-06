@@ -12,7 +12,7 @@
     "paths": {
       "@common/*": ["src/common/*"],
       "@services/*": ["src/services/*"],
-      "@models/*": ["src/entities/*"]
+      "@models/*": ["src/models/*"]
     }
   },
   "include": ["src/**/*"],
