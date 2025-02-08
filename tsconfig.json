@@ -13,8 +13,8 @@
     "baseUrl": ".",
     "paths": {
       "@common/*": ["src/common/*"],
-      "@services/*": ["src/services/*"],
-      "@models/*": ["src/models/*"]
+      "@userAccount/*": ["src/userAccount/*"],
+      "@userProfile/*": ["src/userProfile/*"]
     }
   },
   "include": ["src/**/*"],
