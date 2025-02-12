@@ -1,3 +1,6 @@
+import { FieldNames } from "@common/constants/fieldNames";
+import { IndexNames } from "@common/constants/indexNames";
+import { TableNames } from "@common/constants/tableName";
 import { Gender } from "@common/enums/gender.enum";
 import { BaseModel } from "@common/models/base.model";
 import {
@@ -16,20 +19,23 @@ import {
 } from "@sequelize/core/decorators-legacy";
 
 @Table({
-  tableName: "UserProfile",
+  tableName: TableNames.UserProfile,
   timestamps: true,
   paranoid: true,
   underscored: true,
   indexes: [
     {
-      name: "idx_user_profiles_code",
+      name: IndexNames.UserProfile.Code,
       unique: true,
-      fields: ["code"],
+      fields: [FieldNames.UserProfile.Code],
     },
     {
-      name: "idx_user_profiles_name",
+      name: IndexNames.UserProfile.Name,
       unique: false,
-      fields: ["firstName", "lastName"],
+      fields: [
+        FieldNames.UserProfile.FirstName,
+        FieldNames.UserProfile.LastName,
+      ],
     },
   ],
   comment: "Stores user profile information",

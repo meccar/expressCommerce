@@ -1,3 +1,6 @@
+import { FieldNames } from "@common/constants/fieldNames";
+import { IndexNames } from "@common/constants/indexNames";
+import { TableNames } from "@common/constants/tableName";
 import {
   CreationOptional,
   DataTypes,
@@ -17,23 +20,23 @@ import {
 } from "@sequelize/core/decorators-legacy";
 
 @Table({
-  tableName: "UserAccount",
+  tableName: TableNames.UserAccount,
   underscored: true,
   indexes: [
     {
-      name: "idx_user_accounts_email",
+      name: IndexNames.UserAccount.Email,
       unique: true,
-      fields: ["email"],
+      fields: [FieldNames.UserAccount.Email],
     },
     {
-      name: "idx_user_accounts_username",
+      name: IndexNames.UserAccount.Username,
       unique: true,
-      fields: ["user_name"],
+      fields: [FieldNames.UserAccount.Username],
     },
     {
-      name: "idx_user_accounts_phone",
+      name: IndexNames.UserAccount.Phone,
       unique: true,
-      fields: ["phone_number"],
+      fields: [FieldNames.UserAccount.Phone],
       where: {
         phone_number: {
           [Op.ne]: null,
