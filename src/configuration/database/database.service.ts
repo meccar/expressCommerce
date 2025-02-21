@@ -1,10 +1,10 @@
-import Sequelize from "@sequelize/core";
+import { Sequelize, Options } from "@sequelize/core";
 import { MySqlDialect } from "@sequelize/mysql";
 import { dbConfig } from "./database.configuration";
 
 class DatabaseService {
   private static instance: DatabaseService;
-  private _sequelize: Sequelize<MySqlDialect> | null = null;
+  private _sequelize: Sequelize = {} as any;
 
   private constructor() {}
 
@@ -15,7 +15,7 @@ class DatabaseService {
     return DatabaseService.instance;
   }
 
-  public get sequelize(): Sequelize<MySqlDialect> {
+  public get sequelize(): Sequelize {
     if (!this._sequelize) {
       throw new Error("Database not initialized");
     }
@@ -24,37 +24,7 @@ class DatabaseService {
 
   public async initialize(): Promise<void> {
     try {
-      this._sequelize = new Sequelize({
-        host: process.env.DB_HOST,
-        port: parseInt(process.env.DB_PORT ?? "3306"),
-        database: process.env.DB_DATABASE,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        dialect: MySqlDialect,
-        pool: {
-          max: 1000,
-          min: 0,
-          accquire: 30 * 1000,
-          idle: 10 * 1000,
-        },
-        retry: {
-          max: 10,
-          timeout: 3 * 1000,
-        },
-        charset: "utf8mb4",
-        timezone: "+07:00",
-        logging:
-          process.env.NODE_ENV !== "production"
-            ? (sql: string, timing?: number) => {
-                console.log(`${sql} ${timing ? `[${timing}ms]` : ""}`);
-              }
-            : false,
-        models: Object.values(models).flat(),
-        define: {
-          timestamps: true,
-          underscored: true,
-        },
-      });
+      this._sequelize = new Sequelize(dbConfig);
 
       await this._sequelize.authenticate();
       console.log("Database connection established successfully");

@@ -6,17 +6,23 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
-    "@sequelize/core": "^7.0.0-alpha.44",
+    "@sequelize/core": "^7.0.0-alpha.42",
+    "@sequelize/mysql": "^7.0.0-alpha.45",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/node": "^22.13.4",
     "cookie-parser": "~1.4.4",
     "cors": "^2.8.5",
     "debug": "~2.6.9",
+    "dotenv": "^16.4.7",
     "express": "^5.0.1",
     "helmet": "^8.0.0",
     "http-errors": "~1.6.3",
     "jade": "~1.11.0",
     "morgan": "~1.9.1"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "devDependencies": {
+    "sequelize-cli": "^6.6.2"
+  }
 }
