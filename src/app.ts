@@ -1,4 +1,4 @@
-import { routes } from "@common/configuration/routes";
+import { routes } from "src/configuration/routes";
 import { errorHandler } from "@common/middleware/errorHandler";
 import express, { Express } from "express";
 import helmet from "helmet";

@@ -44,6 +44,11 @@ export class UserProfile extends BaseModel<
   InferAttributes<UserProfile>,
   InferCreationAttributes<UserProfile>
 > {
+  @Index
+  @NotNull
+  @Attribute(DataTypes.STRING(20))
+  declare code: CreationOptional<string>;
+
   @Attribute(DataTypes.STRING(100))
   declare firstName: string;
 

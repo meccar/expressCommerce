@@ -8,6 +8,8 @@ import {
 import {
   Attribute,
   AutoIncrement,
+  Index,
+  NotNull,
   PrimaryKey,
   Table,
 } from "@sequelize/core/decorators-legacy";
@@ -26,6 +28,11 @@ export class UserLogin extends Model<
   InferAttributes<UserLogin>,
   InferCreationAttributes<UserLogin>
 > {
+  @Index
+  @NotNull
+  @Attribute(DataTypes.STRING(20))
+  declare code: CreationOptional<string>;
+
   @Attribute(DataTypes.STRING)
   @PrimaryKey
   @AutoIncrement

@@ -8,37 +8,41 @@ import {
 import {
   Attribute,
   AutoIncrement,
+  Index,
   NotNull,
   PrimaryKey,
   Table,
 } from "@sequelize/core/decorators-legacy";
 
 @Table({
-  tableName: "UserToken",
+  tableName: "Role",
   underscored: true,
   indexes: [
     {
-      name: "idx_usertoken_loginprovider",
-      fields: ["login_provider"],
+      name: "idx_role_name",
+      unique: true,
+      fields: ["name"],
     },
   ],
 })
-export class UserToken extends Model<
-  InferAttributes<UserToken>,
-  InferCreationAttributes<UserToken>
+export class Role extends Model<
+  InferAttributes<Role>,
+  InferCreationAttributes<Role>
 > {
   @Attribute(DataTypes.INTEGER)
   @PrimaryKey
   @AutoIncrement
-  declare userId: CreationOptional<number>;
+  declare id: CreationOptional<number>;
+
+  @Index
+  @NotNull
+  @Attribute(DataTypes.STRING(20))
+  declare code: CreationOptional<string>;
 
   @NotNull
-  @Attribute(DataTypes.STRING(450))
-  declare loginProvider: string;
-
-  @Attribute(DataTypes.STRING)
+  @Attribute(DataTypes.STRING(256))
   declare name: string;
 
   @Attribute(DataTypes.STRING)
-  declare value: string;
+  declare concurrencyStamp: CreationOptional<string>;
 }

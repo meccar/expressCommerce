@@ -4,7 +4,7 @@ import { dbConfig } from "./database.configuration";
 
 class DatabaseService {
   private static instance: DatabaseService;
-  private _sequelize: Sequelize = {} as any;
+  private _sequelize: Sequelize<MySqlDialect> | null = null;
 
   private constructor() {}
 
@@ -15,7 +15,7 @@ class DatabaseService {
     return DatabaseService.instance;
   }
 
-  public get sequelize(): Sequelize {
+  public get sequelize(): Sequelize<MySqlDialect> {
     if (!this._sequelize) {
       throw new Error("Database not initialized");
     }

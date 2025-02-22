@@ -1,10 +1,11 @@
 import {
+  CreationOptional,
   DataTypes,
   InferAttributes,
   InferCreationAttributes,
   Model,
 } from "@sequelize/core";
-import { Attribute, NotNull, Table } from "@sequelize/core/decorators-legacy";
+import { Attribute, Index, NotNull, Table } from "@sequelize/core/decorators-legacy";
 
 @Table({
   tableName: "UserRole",
@@ -24,6 +25,11 @@ export class UserRole extends Model<
   InferAttributes<UserRole>,
   InferCreationAttributes<UserRole>
 > {
+  @Index
+  @NotNull
+  @Attribute(DataTypes.STRING(20))
+  declare code: CreationOptional<string>;
+
   @NotNull
   @Attribute(DataTypes.STRING(20))
   declare userCode: string;

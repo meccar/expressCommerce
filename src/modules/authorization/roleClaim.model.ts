@@ -8,6 +8,7 @@ import {
 import {
   Attribute,
   AutoIncrement,
+  Index,
   NotNull,
   PrimaryKey,
   Table,
@@ -31,6 +32,11 @@ export class RoleClaim extends Model<
   @PrimaryKey
   @AutoIncrement
   declare id: CreationOptional<number>;
+
+  @Index
+  @NotNull
+  @Attribute(DataTypes.STRING(20))
+  declare code: CreationOptional<string>;
 
   @NotNull
   @Attribute(DataTypes.STRING(20))
