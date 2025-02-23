@@ -1,6 +1,7 @@
 import { Sequelize, Options } from "@sequelize/core";
 import { MySqlDialect } from "@sequelize/mysql";
-import { dbConfig } from "./database.configuration";
+import { dbConfig } from "../configuration/database/database.configuration";
+import logger from "@infrastructure/logging/logger";
 
 class DatabaseService {
   private static instance: DatabaseService;
@@ -27,7 +28,7 @@ class DatabaseService {
       this._sequelize = new Sequelize(dbConfig);
 
       await this._sequelize.authenticate();
-      console.log("Database connection established successfully");
+      logger.info("Database connection established successfully");
 
       const syncOptions = {
         alter: process.env.NODE_ENV !== "production",
@@ -35,9 +36,9 @@ class DatabaseService {
       };
 
       await this._sequelize.sync(syncOptions);
-      console.log("Database models synchronized");
+      logger.info("Database models synchronized");
     } catch (error) {
-      console.error("Failed to initialize database:", error);
+      logger.error("Failed to initialize database:", error);
       throw error;
     }
   }

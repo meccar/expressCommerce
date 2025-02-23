@@ -5,9 +5,11 @@ import { Options, SyncOptions } from "@sequelize/core";
 import { MySqlDialect } from "@sequelize/mysql";
 import { UserAccount } from "@userAccount/userAccount.model";
 import { UserProfile } from "@userProfile/userProfile.model";
-import { UserClaim } from "src/modules/authenthication/userClaim.model";
-import { UserLogin } from "src/modules/authenthication/userLogin.model";
-import { UserToken } from "src/modules/authenthication/userToken.model";
+import { UserClaim } from "@authentication/userClaim.model";
+import { UserLogin } from "@authentication/userLogin.model";
+import { UserToken } from "@authentication/userToken.model";
+import { CONFIG } from "../environment/environment.config";
+import logger from "@infrastructure/logging/logger";
 
 export type Models = {
   UserClaim: typeof UserClaim;
@@ -20,20 +22,26 @@ export type Models = {
   UserProfile: typeof UserProfile;
 };
 
-const models = {
-  authentication: [UserClaim, UserLogin, UserToken],
-  authorization: [Role, RoleClaim, UserRole],
-  user: [UserAccount, UserProfile],
-};
+const models = [
+  UserClaim,
+  UserLogin,
+  UserToken,
+  Role,
+  RoleClaim,
+  UserRole,
+  UserAccount,
+  UserProfile,
+];
 
+logger.info(models);
 type LoggingFunction = (sql: string, timing?: number) => void;
 
 export const dbConfig: Options<MySqlDialect> = {
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT ?? "3306"),
-  database: process.env.DB_DATABASE,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
+  host: CONFIG.DB.HOST,
+  port: parseInt(CONFIG.DB.PORT),
+  database: CONFIG.DB.DATABASE,
+  user: CONFIG.DB.USER,
+  password: CONFIG.DB.PASSWORD,
   dialect: MySqlDialect,
   pool: {
     max: 1000,
@@ -41,19 +49,20 @@ export const dbConfig: Options<MySqlDialect> = {
     acquire: 30 * 1000,
     idle: 10 * 1000,
   },
-  retry: {
-    max: 10,
-    timeout: 3 * 1000,
-  },
+  // retry: {
+  //   max: 10,
+  //   timeout: 3 * 1000,
+  // },
   charset: "utf8mb4",
   timezone: "+07:00",
   logging:
     process.env.NODE_ENV !== "production"
       ? (((sql: string, timing?: number) => {
-          console.log(`${sql} ${timing ? `[${timing}ms]` : ""}`);
+          logger.info(`${sql} ${timing ? `[${timing}ms]` : ""}`);
         }) as LoggingFunction)
       : false,
-  models: Object.values(models).flat(),
+  // models: Object.values(models).flat(),
+  models: models,
   define: {
     timestamps: true,
     underscored: true,

@@ -19,10 +19,9 @@ export class BaseModel<T extends {} = any, U extends {} = T> extends Model<
 
   @Index
   @NotNull
-  @Attribute(DataTypes.STRING)
+  @Attribute(DataTypes.STRING(20))
   declare code: CreationOptional<string>;
 
-  @Attribute(DataTypes.DATE)
   // declare createdAt: CreationOptional<Date>;
   @Attribute(DataTypes.STRING)
   declare createdBy: string;

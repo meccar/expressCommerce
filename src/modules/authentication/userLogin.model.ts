@@ -1,18 +1,11 @@
+import { BaseModel } from "@common/models/base.model";
 import {
   CreationOptional,
   DataTypes,
   InferAttributes,
   InferCreationAttributes,
-  Model,
 } from "@sequelize/core";
-import {
-  Attribute,
-  AutoIncrement,
-  Index,
-  NotNull,
-  PrimaryKey,
-  Table,
-} from "@sequelize/core/decorators-legacy";
+import { Attribute, Table } from "@sequelize/core/decorators-legacy";
 
 @Table({
   tableName: "UserLogin",
@@ -24,18 +17,11 @@ import {
     },
   ],
 })
-export class UserLogin extends Model<
+export class UserLogin extends BaseModel<
   InferAttributes<UserLogin>,
   InferCreationAttributes<UserLogin>
 > {
-  @Index
-  @NotNull
-  @Attribute(DataTypes.STRING(20))
-  declare code: CreationOptional<string>;
-
   @Attribute(DataTypes.STRING)
-  @PrimaryKey
-  @AutoIncrement
   declare loginProvider: CreationOptional<number>;
 
   @Attribute(DataTypes.STRING)

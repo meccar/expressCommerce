@@ -4,19 +4,11 @@ import { TableNames } from "@common/constants/tableName";
 import { Gender } from "@common/enums/gender.enum";
 import { BaseModel } from "@common/models/base.model";
 import {
-  CreationOptional,
   DataTypes,
   InferAttributes,
   InferCreationAttributes,
 } from "@sequelize/core";
-import {
-  Attribute,
-  AutoIncrement,
-  Index,
-  NotNull,
-  PrimaryKey,
-  Table,
-} from "@sequelize/core/decorators-legacy";
+import { Attribute, Table } from "@sequelize/core/decorators-legacy";
 
 @Table({
   tableName: TableNames.UserProfile,
@@ -24,11 +16,11 @@ import {
   paranoid: true,
   underscored: true,
   indexes: [
-    {
-      name: IndexNames.UserProfile.Code,
-      unique: true,
-      fields: [FieldNames.UserProfile.Code],
-    },
+    // {
+    //   name: IndexNames.UserProfile.Code,
+    //   unique: true,
+    //   fields: [FieldNames.UserProfile.Code],
+    // },
     {
       name: IndexNames.UserProfile.Name,
       unique: false,
@@ -44,11 +36,6 @@ export class UserProfile extends BaseModel<
   InferAttributes<UserProfile>,
   InferCreationAttributes<UserProfile>
 > {
-  @Index
-  @NotNull
-  @Attribute(DataTypes.STRING(20))
-  declare code: CreationOptional<string>;
-
   @Attribute(DataTypes.STRING(100))
   declare firstName: string;
 

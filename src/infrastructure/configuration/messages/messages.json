@@ -1,0 +1,15 @@
+{
+  "error": {
+    "error_occur": "An error occurred",
+    "internal_server_error": "Something went wrong.",
+    "not_found": "The requested resource was not found.",
+    "invalid_input": "Invalid input provided."
+  },
+  "cluster": {
+    "primaryRunning": "Primary {pid} is running",
+    "forkingWorkers": "Forking {numCPUs} workers...",
+    "workerDied": "Worker {pid} died (exit code: {code}, signal: {signal})",
+    "newWorkerForked": "Forked a new worker {pid} to replace the dead worker",
+    "workerStarted": "Worker {pid} started on port {port}"
+  }
+}

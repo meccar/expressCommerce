@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 export function routes(app: Express) {
-  const servicesPath = path.join(__dirname, "..", "..", "services");
+  const servicesPath = path.join(__dirname, "..", "..", "..", "modules");
 
   function loadRoutes(directory: string) {
     const files = fs.readdirSync(directory);

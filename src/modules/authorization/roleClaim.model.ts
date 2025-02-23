@@ -1,3 +1,4 @@
+import { BaseModel } from "@common/models/base.model";
 import {
   CreationOptional,
   DataTypes,
@@ -24,20 +25,10 @@ import {
     },
   ],
 })
-export class RoleClaim extends Model<
+export class RoleClaim extends BaseModel<
   InferAttributes<RoleClaim>,
   InferCreationAttributes<RoleClaim>
 > {
-  @Attribute(DataTypes.INTEGER)
-  @PrimaryKey
-  @AutoIncrement
-  declare id: CreationOptional<number>;
-
-  @Index
-  @NotNull
-  @Attribute(DataTypes.STRING(20))
-  declare code: CreationOptional<string>;
-
   @NotNull
   @Attribute(DataTypes.STRING(20))
   declare roleCode: string;

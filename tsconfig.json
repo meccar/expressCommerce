@@ -6,7 +6,7 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
@@ -19,6 +19,8 @@
     "baseUrl": ".",
     "paths": {
       "@common/*": ["src/common/*"],
+      "@infrastructure/*": ["src/infrastructure/*"],
+      "@gateway/*": ["src/gateway/*"],
       "@userAccount/*": ["src/modules/userAccount/*"],
       "@userProfile/*": ["src/modules/userProfile/*"],
       "@authentication/*": ["src/modules/authentication/*"],
