@@ -2,6 +2,7 @@ import { Sequelize, Options } from "@sequelize/core";
 import { MySqlDialect } from "@sequelize/mysql";
 import { dbConfig } from "../configuration/database/database.configuration";
 import logger from "@infrastructure/logging/logger";
+import { messages } from "@common/constants/messages";
 
 class DatabaseService {
   private static instance: DatabaseService;
@@ -18,17 +19,17 @@ class DatabaseService {
 
   public get sequelize(): Sequelize<MySqlDialect> {
     if (!this._sequelize) {
-      throw new Error("Database not initialized");
+      throw new Error(messages.db.notInitialized());
     }
     return this._sequelize;
   }
 
-  public async initialize(): Promise<void> {
+  public async initialize(workerPid: number): Promise<void> {
     try {
       this._sequelize = new Sequelize(dbConfig);
 
       await this._sequelize.authenticate();
-      logger.info("Database connection established successfully");
+      logger.info(messages.db.established(workerPid));
 
       const syncOptions = {
         alter: process.env.NODE_ENV !== "production",
@@ -36,9 +37,11 @@ class DatabaseService {
       };
 
       await this._sequelize.sync(syncOptions);
-      logger.info("Database models synchronized");
+      logger.info(
+        messages.db.modelsSynchronized(workerPid, this._sequelize.models.size)
+      );
     } catch (error) {
-      logger.error("Failed to initialize database:", error);
+      logger.error(`${messages.db.initializationFailed(workerPid)}:`, error);
       throw error;
     }
   }

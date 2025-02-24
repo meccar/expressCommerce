@@ -49,19 +49,18 @@ export const dbConfig: Options<MySqlDialect> = {
     acquire: 30 * 1000,
     idle: 10 * 1000,
   },
-  // retry: {
-  //   max: 10,
-  //   timeout: 3 * 1000,
-  // },
+  retry: {
+    max: 10,
+    timeout: 3 * 1000,
+  },
   charset: "utf8mb4",
   timezone: "+07:00",
-  logging:
-    process.env.NODE_ENV !== "production"
-      ? (((sql: string, timing?: number) => {
-          logger.info(`${sql} ${timing ? `[${timing}ms]` : ""}`);
-        }) as LoggingFunction)
-      : false,
-  // models: Object.values(models).flat(),
+  // logging:
+  //   process.env.NODE_ENV !== "production"
+  //     ? (((sql: string, timing?: number) => {
+  //         logger.info(`${sql} ${timing ? `[${timing}ms]` : ""}`);
+  //       }) as LoggingFunction)
+  //     : false,
   models: models,
   define: {
     timestamps: true,

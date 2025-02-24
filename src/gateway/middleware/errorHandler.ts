@@ -1,6 +1,6 @@
+import { messages } from "@common/constants/messages";
 import logger from "@infrastructure/logging/logger";
 import { Request, Response, NextFunction } from "express";
-import messages from "@infrastructure/configuration/messages/messages.json";
 
 class HttpException extends Error {
   status: number;
@@ -20,9 +20,9 @@ const errorHandler = (
   next: NextFunction
 ) => {
   const status = error.status || 500;
-  const message = error.message || messages.error.internal_server_error;
+  const message = error.message || messages.error.internalServerError();
   logger.error({
-    msg: messages.error.error_occur,
+    msg: messages.error.occurred,
     error,
     req: {
       method: req.method,

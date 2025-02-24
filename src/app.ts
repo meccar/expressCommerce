@@ -19,7 +19,7 @@ class App {
   }
 
   private async initializeInfrastructure() {
-    await databaseService.initialize();
+    await databaseService.initialize(process.pid);
   }
 
   private initializeMiddlewares() {
