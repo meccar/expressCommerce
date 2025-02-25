@@ -1,6 +1,4 @@
-import { FieldNames } from "@common/constants/fieldNames";
-import { IndexNames } from "@common/constants/indexNames";
-import { TableNames } from "@common/constants/tableName";
+import { BaseModel, FieldNames, IndexNames, TableNames } from "@common/index";
 import {
   CreationOptional,
   DataTypes,
@@ -46,20 +44,10 @@ import {
   ],
   comment: "Stores user authentication and security information",
 })
-export class UserAccount extends Model<
+export class UserAccount extends BaseModel<
   InferAttributes<UserAccount>,
   InferCreationAttributes<UserAccount>
 > {
-  @Attribute(DataTypes.INTEGER)
-  @PrimaryKey
-  @AutoIncrement
-  declare id: CreationOptional<number>;
-
-  @Index
-  @NotNull
-  @Attribute(DataTypes.STRING(20))
-  declare code: CreationOptional<string>;
-
   @NotNull
   @Attribute(DataTypes.STRING(255))
   declare email: string;
@@ -107,6 +95,7 @@ export class UserAccount extends Model<
   @Default(false)
   declare twoFactorEnabled: boolean;
 
+  @Attribute(DataTypes.DATE)
   declare lockoutEnd: CreationOptional<Date>;
 
   @NotNull

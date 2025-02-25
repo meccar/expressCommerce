@@ -1,23 +1,23 @@
-import { BaseModel } from "@common/models/base.model";
 import {
   CreationOptional,
   DataTypes,
   InferAttributes,
   InferCreationAttributes,
+  Model,
 } from "@sequelize/core";
-import { Attribute, Table } from "@sequelize/core/decorators-legacy";
+import { Attribute, PrimaryKey, Table } from "@sequelize/core/decorators-legacy";
 
 @Table({
   tableName: "UserLogin",
   underscored: true,
-  indexes: [
-    {
-      name: "idx_userlogin_userid",
-      fields: ["user_id"],
-    },
-  ],
+  // indexes: [
+  //   {
+  //     name: "idx_userlogin_userid",
+  //     fields: ["user_id"],
+  //   },
+  // ],
 })
-export class UserLogin extends BaseModel<
+export class UserLogin extends Model<
   InferAttributes<UserLogin>,
   InferCreationAttributes<UserLogin>
 > {
@@ -30,6 +30,7 @@ export class UserLogin extends BaseModel<
   @Attribute(DataTypes.STRING)
   declare providerDisplayName: string;
 
-  @Attribute(DataTypes.INTEGER)
-  declare userId: number;
+  @Attribute(DataTypes.STRING(20))
+  @PrimaryKey
+  declare userCode: string;
 }

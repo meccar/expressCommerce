@@ -1,11 +1,9 @@
 import os from "os";
-
 import cluster from "cluster";
 import app from "./app";
 import "tsconfig-paths/register";
-import { CONFIG } from "@infrastructure/configuration/environment/environment.config";
-import logger from "@infrastructure/logging/logger";
-import { messages } from "@common/constants/messages";
+import { CONFIG, logger } from "@infrastructure/index";
+import { messages } from "@common/index";
 
 if (cluster.isPrimary) {
   logger.info(messages.cluster.primaryRunning(process.pid));

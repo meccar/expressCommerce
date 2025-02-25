@@ -1,12 +1,9 @@
 import express, { Express } from "express";
 import helmet from "helmet";
 import cors from "cors";
-import { errorHandler } from "@gateway/middleware/errorHandler";
-import { routes } from "@infrastructure/configuration/routes/routes";
-import { databaseService } from "@infrastructure/database/database.service";
 import pinoHttp from "pino-http";
-import logger from "@infrastructure/logging/logger";
-
+import { databaseService, logger, routes } from "@infrastructure/index";
+import { errorMiddleware } from "@gateway/index";
 class App {
   public app: Express;
 
@@ -40,7 +37,7 @@ class App {
   }
 
   private initializeErrorHandling() {
-    this.app.use(errorHandler);
+    this.app.use(errorMiddleware);
   }
 }
 

@@ -6,6 +6,12 @@ export const messages = {
     resourceNotFound: (resource: string): string =>
       `The requested resource "${resource}" was not found.`,
     invalidInput: (): string => `Invalid input provided.`,
+    bad_request_400: "The request could not be processed due to invalid data.",
+    unauthorized_401: "Unauthorized access. Please log in.",
+    forbidden_403: "You do not have permission to perform this action.",
+    not_found_404: "The requested resource could not be found.",
+    validation_failed_422: "Validation failed. Please check your input.",
+    internal_server_error_500: "A server error occurred. Please try again later."
   },
 
   // Cluster-related messages

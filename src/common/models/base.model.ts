@@ -21,19 +21,21 @@ export class BaseModel<T extends {} = any, U extends {} = T> extends Model<
   @NotNull
   @Attribute(DataTypes.STRING(20))
   declare code: CreationOptional<string>;
-
-  // declare createdAt: CreationOptional<Date>;
+  
   @Attribute(DataTypes.STRING)
   declare createdBy: string;
-
-  // @Attribute(DataTypes.DATE)
-  // declare updatedAt: CreationOptional<Date>;
-
+  
   @Attribute(DataTypes.STRING)
   declare updatedBy: string;
+  
+  @Attribute(DataTypes.DATE)
+  declare createdAt: CreationOptional<Date>;
 
-  // @Attribute(DataTypes.DATE)
-  // declare deletedAt: CreationOptional<Date>;
+  @Attribute(DataTypes.DATE)
+  declare updatedAt: CreationOptional<Date>;
+
+  @Attribute(DataTypes.DATE)
+  declare deletedAt: CreationOptional<Date>;
 
   @NotNull
   @Attribute(DataTypes.BOOLEAN)

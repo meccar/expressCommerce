@@ -1,8 +1,4 @@
-import { FieldNames } from "@common/constants/fieldNames";
-import { IndexNames } from "@common/constants/indexNames";
-import { TableNames } from "@common/constants/tableName";
-import { Gender } from "@common/enums/gender.enum";
-import { BaseModel } from "@common/models/base.model";
+import { BaseModel, FieldNames, Gender, IndexNames, TableNames } from "@common/index";
 import {
   DataTypes,
   InferAttributes,
@@ -12,8 +8,6 @@ import { Attribute, Table } from "@sequelize/core/decorators-legacy";
 
 @Table({
   tableName: TableNames.UserProfile,
-  timestamps: true,
-  paranoid: true,
   underscored: true,
   indexes: [
     // {

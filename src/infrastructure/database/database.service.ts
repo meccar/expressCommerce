@@ -1,8 +1,8 @@
-import { Sequelize, Options } from "@sequelize/core";
+import { Sequelize } from "@sequelize/core";
 import { MySqlDialect } from "@sequelize/mysql";
-import { dbConfig } from "../configuration/database/database.configuration";
-import logger from "@infrastructure/logging/logger";
-import { messages } from "@common/constants/messages";
+import { dbConfig } from "../configuration/database/database.config";
+import { logger } from "@infrastructure/index";
+import { Environments, messages } from "@common/index";
 
 class DatabaseService {
   private static instance: DatabaseService;
@@ -32,7 +32,7 @@ class DatabaseService {
       logger.info(messages.db.established(workerPid));
 
       const syncOptions = {
-        alter: process.env.NODE_ENV !== "production",
+        alter: process.env.NODE_ENV !== Environments.Production,
         force: false,
       };
 

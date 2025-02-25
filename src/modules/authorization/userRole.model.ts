@@ -1,14 +1,11 @@
-import { BaseModel } from "@common/models/base.model";
+import { BaseModel } from "@common/index";
 import {
-  CreationOptional,
   DataTypes,
   InferAttributes,
   InferCreationAttributes,
-  Model,
 } from "@sequelize/core";
 import {
   Attribute,
-  Index,
   NotNull,
   Table,
 } from "@sequelize/core/decorators-legacy";

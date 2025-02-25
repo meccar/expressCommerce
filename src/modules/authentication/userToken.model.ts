@@ -1,11 +1,12 @@
-import { BaseModel } from "@common/models/base.model";
+import { BaseModel } from "@common/index";
 import {
   CreationOptional,
   DataTypes,
   InferAttributes,
   InferCreationAttributes,
+  Model,
 } from "@sequelize/core";
-import { Attribute, Table } from "@sequelize/core/decorators-legacy";
+import { Attribute, PrimaryKey, Table } from "@sequelize/core/decorators-legacy";
 
 @Table({
   tableName: "UserToken",
@@ -17,12 +18,13 @@ import { Attribute, Table } from "@sequelize/core/decorators-legacy";
     },
   ],
 })
-export class UserToken extends BaseModel<
+export class UserToken extends Model<
   InferAttributes<UserToken>,
   InferCreationAttributes<UserToken>
 > {
-  @Attribute(DataTypes.INTEGER)
-  declare userId: CreationOptional<number>;
+  @Attribute(DataTypes.STRING(20))
+  @PrimaryKey
+  declare userCode: string;
 
   @Attribute(DataTypes.STRING(450))
   declare loginProvider: string;
