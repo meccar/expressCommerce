@@ -3,7 +3,7 @@ import helmet from "helmet";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import { databaseService, logger, routes } from "@infrastructure/index";
-import { errorMiddleware } from "@gateway/index";
+import { errorMiddleware, responseMiddleware } from "@gateway/index";
 class App {
   public app: Express;
 
@@ -29,7 +29,7 @@ class App {
     this.app.use(express.json({ limit: "100mb" }));
     this.app.use(express.urlencoded({ limit: "100mb" }));
     // this.app.use(cookieParser)
-    // this.app.use(requestLogger);
+    this.app.use(responseMiddleware);
   }
 
   private initializeRoutes() {

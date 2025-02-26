@@ -35,19 +35,20 @@ import {
       name: IndexNames.UserAccount.Phone,
       unique: true,
       fields: [FieldNames.UserAccount.Phone],
-      where: {
-        phone_number: {
-          [Op.ne]: null,
-        },
-      },
     },
   ],
   comment: "Stores user authentication and security information",
 })
-export class UserAccount extends BaseModel<
+export class UserAccount extends Model<
   InferAttributes<UserAccount>,
   InferCreationAttributes<UserAccount>
 > {
+  @Index
+  @NotNull
+  @PrimaryKey
+  @Attribute(DataTypes.STRING(20))
+  declare code: CreationOptional<string>;
+
   @NotNull
   @Attribute(DataTypes.STRING(255))
   declare email: string;

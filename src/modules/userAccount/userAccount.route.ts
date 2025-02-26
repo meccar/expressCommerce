@@ -1,3 +1,4 @@
+import { statusCodes } from "@common/index";
 import { UserAccountService } from "./userAccount.service";
 import express, { Request, Response, NextFunction } from 'express';
 
@@ -22,11 +23,8 @@ export class UserAccountRoute {
     private async register(req: Request, res: Response, next: NextFunction): Promise<void> {
         const userData = req.body;
         const result = await this.userAccountService.register(userData);
-        res.status(201).json({
-        success: true,
-        message: 'User account created successfully',
-        data: result
-    })}
+        res.success(result, statusCodes.CREATED);
+    }
 
     // private async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     //     const userId = req.user.id; // Coming from auth middleware

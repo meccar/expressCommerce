@@ -4,7 +4,7 @@ import {
   InferAttributes,
   InferCreationAttributes,
 } from "@sequelize/core";
-import { Attribute, Table } from "@sequelize/core/decorators-legacy";
+import { AllowNull, Attribute, Default, NotNull, Table } from "@sequelize/core/decorators-legacy";
 
 @Table({
   tableName: TableNames.UserProfile,
@@ -30,15 +30,23 @@ export class UserProfile extends BaseModel<
   InferAttributes<UserProfile>,
   InferCreationAttributes<UserProfile>
 > {
-  @Attribute(DataTypes.STRING(100))
-  declare firstName: string;
+  @NotNull
+  @Attribute(DataTypes.STRING(20))
+  declare userAccountCode: string;
 
+  @AllowNull
   @Attribute(DataTypes.STRING(100))
-  declare lastName: string;
+  declare firstName?: string;
+
+  @AllowNull
+  @Attribute(DataTypes.STRING(100))
+  declare lastName?: string;
 
   @Attribute(DataTypes.ENUM(...Object.values(Gender)))
+  @Default(Gender.Female)
   declare gender: Gender;
 
+  @AllowNull
   @Attribute(DataTypes.DATEONLY)
-  declare dateOfBirth: string;
+  declare dateOfBirth?: string;
 }
