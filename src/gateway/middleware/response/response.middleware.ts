@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import {ApiResponse, logger} from "@infrastructure/index";
-import { Environments, messages, statusCodes } from "@common/index";
+import { ApiResponse } from "@infrastructure/index";
+import { statusCodes } from "@common/index";
 
 declare global {
     namespace Express {

@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start:dev": "cross-env NODE_ENV=development npx ts-node -r tsconfig-paths/register src/server.ts",
-    "start:prod": "cross-env NODE_ENV=production node -r tsconfig-paths/register dist/server.js",
-    "build": "tsc",
-    "debug": "cross-env NODE_ENV=development npx ts-node --inspect -r tsconfig-paths/register src/server.ts"
+    "start:dev": "nodemon",
+    "start:prod": "cross-env NODE_ENV=production node dist/server.js",
+    "start:debug": "cross-env NODE_ENV=development ts-node src/server.ts",
+    "build": "tsc"
   },
   "dependencies": {
     "@elastic/ecs-winston-format": "^1.5.3",
@@ -35,7 +35,6 @@
     "pino-http": "^10.4.0",
     "typescript": "^5.7.3"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
@@ -46,5 +45,12 @@
     "pino-pretty": "^13.0.0",
     "sequelize-cli": "^6.6.2",
     "tsconfig-paths": "^4.2.0"
-  }
+  },
+  "nodemonConfig": {
+    "watch": ["src"],
+    "ext": "ts,json",
+    "ignore": ["src/**/*.spec.ts"],
+    "exec": "cross-env NODE_ENV=development ts-node ./src/server.ts"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

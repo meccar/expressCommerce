@@ -23,4 +23,7 @@ export const CONFIG = {
     UPTRACE_DSN: process.env.TELEMETRY_UPTRACE_DSN || "",
     SERVICE_NAME: process.env.TELEMETRY_SERVICE_NAME,
   },
+  API: {
+    API_VERSION: process.env.API_VERSION
+  }
 };

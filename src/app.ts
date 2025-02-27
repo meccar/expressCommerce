@@ -2,7 +2,7 @@ import express, { Express } from "express";
 import helmet from "helmet";
 import cors from "cors";
 import pinoHttp from "pino-http";
-import { databaseService, logger, routes } from "@infrastructure/index";
+import { databaseService, logger, RoutesConfiguration } from "@infrastructure/index";
 import { errorMiddleware, responseMiddleware } from "@gateway/index";
 class App {
   public app: Express;
@@ -33,7 +33,7 @@ class App {
   }
 
   private initializeRoutes() {
-    routes(this.app);
+    new RoutesConfiguration(this.app);
   }
 
   private initializeErrorHandling() {
