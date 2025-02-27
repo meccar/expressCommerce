@@ -2,8 +2,15 @@ import express, { Express } from "express";
 import helmet from "helmet";
 import cors from "cors";
 import pinoHttp from "pino-http";
-import { databaseService, logger, RoutesConfiguration } from "@infrastructure/index";
+import {
+  databaseService,
+  logger,
+  RoutesConfiguration,
+  SwaggerConfiguration,
+} from "@infrastructure/index";
 import { errorMiddleware, responseMiddleware } from "@gateway/index";
+import swaggerUi from "swagger-ui-express";
+
 class App {
   public app: Express;
 
@@ -27,13 +34,15 @@ class App {
     this.app.use(httpLogger);
 
     this.app.use(express.json({ limit: "100mb" }));
-    this.app.use(express.urlencoded({ limit: "100mb" }));
+    this.app.use(express.urlencoded({ limit: "100mb", extended: true }));
+
     // this.app.use(cookieParser)
     this.app.use(responseMiddleware);
   }
 
   private initializeRoutes() {
     new RoutesConfiguration(this.app);
+    new SwaggerConfiguration(this.app);
   }
 
   private initializeErrorHandling() {

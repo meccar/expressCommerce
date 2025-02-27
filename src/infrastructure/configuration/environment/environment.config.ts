@@ -24,6 +24,6 @@ export const CONFIG = {
     SERVICE_NAME: process.env.TELEMETRY_SERVICE_NAME,
   },
   API: {
-    API_VERSION: process.env.API_VERSION
-  }
+    API_VERSION: process.env.API_VERSION,
+  },
 };

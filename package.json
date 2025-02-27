@@ -29,10 +29,13 @@
     "express": "^5.0.1",
     "helmet": "^8.0.0",
     "http-errors": "~1.6.3",
-    "jade": "~1.11.0",
+    "jade": "^1.9.2",
     "morgan": "~1.9.1",
+    "nodemon": "^3.1.9",
     "pino": "^9.6.0",
     "pino-http": "^10.4.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "typescript": "^5.7.3"
   },
   "devDependencies": {
@@ -40,16 +43,23 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.4",
-    "ts-node": "^10.9.2",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
+    "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
     "pino-pretty": "^13.0.0",
     "sequelize-cli": "^6.6.2",
+    "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0"
   },
   "nodemonConfig": {
-    "watch": ["src"],
+    "watch": [
+      "src"
+    ],
     "ext": "ts,json",
-    "ignore": ["src/**/*.spec.ts"],
+    "ignore": [
+      "src/**/*.spec.ts"
+    ],
     "exec": "cross-env NODE_ENV=development ts-node ./src/server.ts"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
