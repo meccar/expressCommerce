@@ -1,7 +1,7 @@
 export const FieldNames = {
   UserAccount: {
     Email: "email",
-    Username: "user_name",
+    Username: "username",
     Phone: "phone_number",
   },
   UserProfile: {

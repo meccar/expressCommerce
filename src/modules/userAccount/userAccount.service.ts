@@ -21,21 +21,24 @@ export class UserAccountService extends RootRepository<UserAccount> {
     }
     
     public async register(userData: any):  Promise<any> {
-        const { email, userName, password } = userData;
+        const { email, username, password } = userData;
 
+        if (!(email && username && password)) throw new BadRequestException("Please enter email, username and password");
+        
         const existingUser = await this.findOne({ 
             where: {
-                [Op.or]: [{ email }, { userName }]            
+                [Op.or]: [{ email }, { username }]            
             } 
         });
 
         if (existingUser) throw new BadRequestException('Email or username already in use');
         
         const hashedPassword = await hash(password, 10);
+
         return await this.withTransaction(async transaction => {
             const userAccount = await this.create({
                 email,
-                userName,
+                username,
                 password: hashedPassword,
                 isActive: true
             }, {transaction})

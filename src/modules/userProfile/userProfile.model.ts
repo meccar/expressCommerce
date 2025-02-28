@@ -31,7 +31,7 @@ export class UserProfile extends BaseModel<
   InferCreationAttributes<UserProfile>
 > {
   @NotNull
-  @Attribute(DataTypes.STRING(20))
+  @Attribute(DataTypes.UUID.V1)
   declare userAccountCode: string;
 
   @AllowNull

@@ -9,7 +9,6 @@ import {
   SwaggerConfiguration,
 } from "@infrastructure/index";
 import { errorMiddleware, responseMiddleware } from "@gateway/index";
-import swaggerUi from "swagger-ui-express";
 
 class App {
   public app: Express;

@@ -6,8 +6,10 @@ import {
   InferCreationAttributes,
   Model,
   Op,
+  sql,
 } from "@sequelize/core";
 import {
+  AllowNull,
   Attribute,
   AutoIncrement,
   Default,
@@ -15,7 +17,9 @@ import {
   NotNull,
   PrimaryKey,
   Table,
+  ValidateAttribute,
 } from "@sequelize/core/decorators-legacy";
+import { IsDecimal, IsEmail, NotEmpty } from "@sequelize/validator.js";
 
 @Table({
   tableName: TableNames.UserAccount,
@@ -31,11 +35,6 @@ import {
       unique: true,
       fields: [FieldNames.UserAccount.Username],
     },
-    {
-      name: IndexNames.UserAccount.Phone,
-      unique: true,
-      fields: [FieldNames.UserAccount.Phone],
-    },
   ],
   comment: "Stores user authentication and security information",
 })
@@ -44,21 +43,25 @@ export class UserAccount extends Model<
   InferCreationAttributes<UserAccount>
 > {
   @Index
-  @NotNull
   @PrimaryKey
-  @Attribute(DataTypes.STRING(20))
+  @Attribute(DataTypes.UUID.V1)
+  @Default(sql.uuidV1)
   declare code: CreationOptional<string>;
 
   @NotNull
   @Attribute(DataTypes.STRING(255))
+  @IsEmail({msg: "Please enter a valid email"})
+  @NotEmpty({msg: "Please enter your email"})
   declare email: string;
 
   @NotNull
   @Attribute(DataTypes.STRING(100))
-  declare userName: string;
+  @NotEmpty({msg: "Please enter your username"})
+  declare username: string;
 
   @NotNull
   @Attribute(DataTypes.STRING(255))
+  @NotEmpty({msg: "Please enter your password"})
   declare password: string;
 
   @Attribute(DataTypes.STRING(100))
@@ -80,10 +83,13 @@ export class UserAccount extends Model<
   declare emailConfirmed: boolean;
 
   @NotNull
-  @Attribute(DataTypes.STRING(36))
+  @Attribute(DataTypes.UUID.V1)
+  @Default(sql.uuidV1)
   declare securityStamp: string;
 
   @Attribute(DataTypes.STRING(20))
+  @IsDecimal({msg: "Please enter a valid phone number"})
+  @NotEmpty({msg: "Please enter your phone number"})
   declare phoneNumber: string;
 
   @NotNull
@@ -97,7 +103,8 @@ export class UserAccount extends Model<
   declare twoFactorEnabled: boolean;
 
   @Attribute(DataTypes.DATE)
-  declare lockoutEnd: CreationOptional<Date>;
+  @AllowNull
+  declare lockoutEnd: Date;
 
   @NotNull
   @Attribute(DataTypes.BOOLEAN)
@@ -105,7 +112,7 @@ export class UserAccount extends Model<
   declare lockoutEnabled: boolean;
 
   @NotNull
-  @Attribute(DataTypes.BOOLEAN)
+  @Attribute(DataTypes.INTEGER)
   @Default(0)
   declare accessFailedCount: number;
 

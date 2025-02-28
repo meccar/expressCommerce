@@ -1,4 +1,3 @@
-export * from "./userProfile.controller";
 export * from "./userProfile.model";
 export * from "./userProfile.repository";
 export * from "./userProfile.route";

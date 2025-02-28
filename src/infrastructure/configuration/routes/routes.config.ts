@@ -6,10 +6,10 @@ import { UserAccountRoute } from "@modules/index";
 export class RoutesConfiguration {
   constructor(private readonly app: express.Application) {
     this.app = app;
-    this.configureRoutes();
+    this.configure();
   }
 
-  private configureRoutes(): void {
+  private configure(): void {
     const apiBasePath = `/${Api.apiRoot}/${CONFIG.API.API_VERSION}`;
     const userAccountRoute = express.Router();
 

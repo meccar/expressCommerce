@@ -1,4 +1,4 @@
-import { CreationOptional, DataTypes, Model } from "@sequelize/core";
+import { CreationOptional, DataTypes, Model, sql } from "@sequelize/core";
 import {
   Attribute,
   AutoIncrement,
@@ -19,7 +19,8 @@ export class BaseModel<T extends {} = any, U extends {} = T> extends Model<
 
   @Index
   @NotNull
-  @Attribute(DataTypes.STRING(20))
+  @Attribute(DataTypes.UUID.V1)
+  @Default(sql.uuidV1)
   declare code: CreationOptional<string>;
   
   @Attribute(DataTypes.STRING)

@@ -1009,6 +1009,14 @@
     "@types/lodash" "^4.17.0"
     lodash "^4.17.21"
 
+"@sequelize/validator.js@^7.0.0-alpha.45":
+  version "7.0.0-alpha.45"
+  resolved "https://registry.yarnpkg.com/@sequelize/validator.js/-/validator.js-7.0.0-alpha.45.tgz#0fc1247373b019e20323107d3ce922f172353c00"
+  integrity sha512-Qawg3/UVhD1czmflmx9Fp7Q+I1BETR+HmEPZ/Apzu6qTIMREbtKBTriT7uk3sxcvRFUkQs2CAH/Fi+yKuoePrQ==
+  dependencies:
+    "@sequelize/core" "7.0.0-alpha.45"
+    lodash "^4.17.21"
+
 "@tsconfig/node10@^1.0.7":
   version "1.0.11"
   resolved "https://registry.npmjs.org/@tsconfig/node10/-/node10-1.0.11.tgz"
