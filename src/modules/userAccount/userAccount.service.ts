@@ -55,4 +55,20 @@ export class UserAccountService extends RootRepository<UserAccount> {
             }
         });
     }
+
+    public async login(loginData: any): Promise<any> {
+        const { email, username, password } = loginData;
+        if (!((email || username) && password)) throw new BadRequestException("Please enter email, username and password");
+
+        const existingUser = await this.findOne({ 
+            where: {
+                [Op.or]: [{ email }, { username }]            
+            } 
+        });
+
+        if (!existingUser) throw new BadRequestException('Email, username or password is not correct');
+
+        if (await !compare(password, existingUser.password)) throw new BadRequestException('Email, username or password is not correct');
+
+    }
 }

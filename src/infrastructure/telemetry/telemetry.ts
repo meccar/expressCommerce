@@ -1,6 +1,6 @@
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { CONFIG } from "@infrastructure/configuration/environment/environment.config";
+import { CONFIG } from "src/config/environment/environment.config";
 import { Resource } from "@opentelemetry/resources";
 import {
   ATTR_SERVICE_NAME,

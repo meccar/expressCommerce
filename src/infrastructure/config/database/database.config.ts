@@ -2,7 +2,7 @@ import { Options, SyncOptions } from "@sequelize/core";
 import { MySqlDialect } from "@sequelize/mysql";
 import { Role, RoleClaim, UserAccount, UserClaim, UserLogin, UserProfile, UserRole, UserToken } from "@modules/index";
 import { Environments } from "@common/index";
-import { CONFIG } from "../environment/environment.config";
+import { CONFIG } from "@config/index";
 
 const models = [
   UserClaim,

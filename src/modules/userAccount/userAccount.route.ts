@@ -7,15 +7,19 @@ export class UserAccountRoute extends BaseRoute {
   private readonly userAccountService: UserAccountService;
 
   constructor(router: express.Router) {
-    super(router, `/${Api.service.userAccount}`);
+    super(router, `${Api.service.userAccount}`);
     this.userAccountService = new UserAccountService();
     this.initializeRoutes();
   }
 
   private initializeRoutes(): void {
     this.router.post(
-      `${this.basePath}/${Api.method.register}`,
+      `${this.basePath}${Api.method.register}`,
       this.errorHandler(this.register)
+    );
+    this.router.post(
+      `${this.basePath}${Api.method.login}`,
+      this.errorHandler(this.login)
     );
   }
 
@@ -33,5 +37,11 @@ export class UserAccountRoute extends BaseRoute {
     const userData = req.body;
     const result = await this.userAccountService.register(userData);
     res.success(result, statusCodes.CREATED);
+  }
+
+  private async login(req: Request, res: Response): Promise<void> {
+    const loginData = req.body;
+    const result = await this.userAccountService.login(loginData);
+    res.success(result, statusCodes.OK);
   }
 }

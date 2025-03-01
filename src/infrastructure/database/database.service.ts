@@ -1,6 +1,6 @@
 import { Sequelize } from "@sequelize/core";
 import { MySqlDialect } from "@sequelize/mysql";
-import { dbConfig } from "../configuration/database/database.config";
+import { dbConfig } from "../config/database/database.config";
 import { logger } from "@infrastructure/index";
 import { Environments, messages } from "@common/index";
 

@@ -1,7 +1,7 @@
 import express from "express";
-import { CONFIG } from "@infrastructure/index";
 import { Api } from "@common/index";
 import { UserAccountRoute } from "@modules/index";
+import { CONFIG } from "../environment/environment.config";
 
 export class RoutesConfiguration {
   constructor(private readonly app: express.Application) {

@@ -1,6 +1,6 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
-import { swaggerDocs } from "../swagger/swaggerOptions";
+import { swaggerDocs } from "./swaggerOptions";
 
 export class SwaggerConfiguration {
   constructor(private readonly app: express.Application) {
