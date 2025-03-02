@@ -2,48 +2,47 @@ import { Sequelize } from "@sequelize/core";
 import { MySqlDialect } from "@sequelize/mysql";
 import { dbConfig } from "../config/database/database.config";
 import { logger } from "@infrastructure/index";
-import { Environments, messages } from "@common/index";
+import {
+  BadRequestException,
+  Environments,
+  messages,
+  ServiceBase,
+} from "@common/index";
 
-class DatabaseService {
-  private static instance: DatabaseService;
+class DatabaseService extends ServiceBase {
   private _sequelize: Sequelize<MySqlDialect> | null = null;
 
-  private constructor() {}
-
-  public static getInstance(): DatabaseService {
-    if (!DatabaseService.instance) {
-      DatabaseService.instance = new DatabaseService();
-    }
-    return DatabaseService.instance;
+  constructor() {
+    super(DatabaseService.name);
   }
 
   public get sequelize(): Sequelize<MySqlDialect> {
-    if (!this._sequelize) {
-      throw new Error(messages.db.notInitialized());
-    }
+    if (!this._sequelize)
+      throw new BadRequestException(messages.db.notInitialized());
+
     return this._sequelize;
   }
 
-  public async initialize(workerPid: number): Promise<void> {
-    try {
-      this._sequelize = new Sequelize(dbConfig);
+  public async configure(workerPid: number): Promise<void> {
+    this._sequelize = new Sequelize(dbConfig);
 
-      await this._sequelize.authenticate();
-      logger.info(messages.db.established(workerPid));
+    await this._sequelize.authenticate();
+    logger.info(messages.db.established(workerPid));
 
-      const syncOptions = {
-        alter: process.env.NODE_ENV !== Environments.Production,
-        force: false,
-      };
+    const syncOptions = {
+      alter: process.env.NODE_ENV !== Environments.Production,
+      force: false,
+    };
 
-      await this._sequelize.sync(syncOptions);
-      logger.info(
-        messages.db.modelsSynchronized(workerPid, this._sequelize.models.size)
-      );
-    } catch (error) {
-      logger.error(`${messages.db.initializationFailed(workerPid)}:`, error);
-      throw error;
-    }
+    await this._sequelize.sync(syncOptions);
+    logger.info(
+      messages.db.modelsSynchronized(workerPid, this._sequelize.models.size)
+    );
+    logger.info(messages.service.configured(DatabaseService.name));
+  }
+
+  public isConfigured(): boolean {
+    return !!this._sequelize;
   }
 
   public async closeConnection(): Promise<void> {

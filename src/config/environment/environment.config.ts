@@ -26,4 +26,9 @@ export const CONFIG = {
   API: {
     API_VERSION: process.env.API_VERSION,
   },
+  SENDGRID: {
+    SENDGRID_API: process.env.SENDGRID_API || "123",
+    SENDGRID_MAIL_SENDER:
+      process.env.SENDGRID_MAIL_SENDER || "default@example.com",
+  },
 };

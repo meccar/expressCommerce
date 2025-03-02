@@ -11,7 +11,8 @@ export const messages = {
     forbidden_403: "You do not have permission to perform this action.",
     not_found_404: "The requested resource could not be found.",
     validation_failed_422: "Validation failed. Please check your input.",
-    internal_server_error_500: "A server error occurred. Please try again later."
+    internal_server_error_500:
+      "A server error occurred. Please try again later.",
   },
 
   // Cluster-related messages
@@ -39,5 +40,11 @@ export const messages = {
       `Worker ${workerPid} - ${modelCount} database models synchronized`,
     initializationFailed: (workerPid: number): string =>
       `Worker ${workerPid} - Failed to initialize database`,
+  },
+  service: {
+    configured: (service: string): string =>
+      `${service} has been successfully configured.`,
+    notConfigured: (service: string): string =>
+      `${service} has not been configured.`,
   },
 };
