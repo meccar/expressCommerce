@@ -33,9 +33,11 @@
     "http-errors": "~1.6.3",
     "jade": "^1.9.2",
     "morgan": "~1.9.1",
+    "node-vault": "^0.10.2",
     "nodemon": "^3.1.9",
     "pino": "^9.6.0",
     "pino-http": "^10.4.0",
+    "sequelize-typescript": "^2.1.6",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "typescript": "^5.7.3"

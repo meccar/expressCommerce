@@ -10,6 +10,8 @@ import {
 } from "@infrastructure/index";
 import { errorMiddleware, responseMiddleware } from "@gateway/index";
 import { CONFIG, routesConfiguration } from "@config/index";
+import { vaultService } from "@infrastructure/vault/vault.service";
+import { keyRotationService } from "@infrastructure/keyRotation/keyRotation.service";
 
 class App {
   public app: Express;
@@ -29,6 +31,18 @@ class App {
       CONFIG.SENDGRID.SENDGRID_API,
       CONFIG.SENDGRID.SENDGRID_MAIL_SENDER
     );
+
+    await vaultService.configure(
+      CONFIG.VAULT.VAULT_ADDR || "http://127.0.0.1:8200",
+      CONFIG.VAULT.VAULT_TOKEN
+    );
+
+    await keyRotationService.configure("secret/data/database/encryption-key", {
+      useTransitEngine: CONFIG.VAULT.USE_TRANSIT_ENGINE,
+      transitPath: CONFIG.VAULT.TRANSIT_PATH || "transit",
+      keyName: CONFIG.VAULT.KEY_NAME || "database-encryption",
+    });
+
     await swaggerConfiguration.configure(this.app);
   }
 
