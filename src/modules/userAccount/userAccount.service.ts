@@ -1,10 +1,10 @@
 import { RootRepository } from "@infrastructure/repository/rootRepository";
 import { UserAccount } from "./userAccount.model";
 import { databaseService, mailService } from "@infrastructure/index";
-import { BadRequestException } from "@common/index";
-import { hash, compare } from "bcrypt";
+import { BadRequestException, compare, encrypt } from "@common/index";
 import { UserProfile } from "@modules/userProfile";
 import { Op, Transaction } from "@sequelize/core";
+import { CONFIG } from "@config/index";
 
 export class UserAccountService extends RootRepository<UserAccount> {
   constructor() {
@@ -37,7 +37,8 @@ export class UserAccountService extends RootRepository<UserAccount> {
     if (existingUser)
       throw new BadRequestException("Email or username already in use");
 
-    const hashedPassword = await hash(password, 10);
+    // const hashedPassword = await hash(password, 10);
+    const hashedPassword = await encrypt(password, CONFIG.SYSTEM.ENCRYPT_SENSITIVE_SECRET_KEY!, true);
 
     return await this.withTransaction(async (transaction) => {
       const userAccount = await this.create(
@@ -59,7 +60,7 @@ export class UserAccountService extends RootRepository<UserAccount> {
 
       const { password: _, ...userWithoutPassword } = userAccount.toJSON();
 
-      mailService.send({
+      await mailService.send({
         to: email,
         from: process.env.SENDGRID_FROM_EMAIL,
         subject: "Welcome to our platform!",
@@ -91,7 +92,7 @@ export class UserAccountService extends RootRepository<UserAccount> {
         "Email, username or password is not correct"
       );
 
-    if (await !compare(password, existingUser.password))
+    if (await !compare(password, existingUser.password, CONFIG.SYSTEM.ENCRYPT_SENSITIVE_SECRET_KEY!, true))
       throw new BadRequestException(
         "Email, username or password is not correct"
       );

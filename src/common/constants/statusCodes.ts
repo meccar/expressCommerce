@@ -16,3 +16,5 @@ export const statusCodes = {
     GATEWAY_TIMEOUT: 504,
     VALIDATION_FAILED: 422,
 } as const;
+
+export type statusCodes = typeof statusCodes[keyof typeof statusCodes]

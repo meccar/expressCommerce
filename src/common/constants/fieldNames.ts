@@ -10,3 +10,5 @@ export const FieldNames = {
     LastName: "last_name",
   },
 } as const;
+
+export type FieldNames = typeof FieldNames[keyof typeof FieldNames]

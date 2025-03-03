@@ -1,4 +1,3 @@
-import { BaseModel } from "@common/index";
 import {
   CreationOptional,
   DataTypes,
@@ -25,7 +24,7 @@ import {
     },
   ],
 })
-export class RoleClaim extends BaseModel<
+export class RoleClaim extends Model<
   InferAttributes<RoleClaim>,
   InferCreationAttributes<RoleClaim>
 > {

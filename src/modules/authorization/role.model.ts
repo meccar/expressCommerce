@@ -19,20 +19,10 @@ import { Attribute, AutoIncrement, Index, NotNull, PrimaryKey, Table } from "@se
     },
   ],
 })
-export class Role extends Model<
+export class Role extends BaseModel<
   InferAttributes<Role>,
   InferCreationAttributes<Role>
 > {
-  @Attribute(DataTypes.INTEGER)
-  @PrimaryKey
-  @AutoIncrement
-  declare id: CreationOptional<number>;
-
-  @Index
-  @NotNull
-  @Attribute(DataTypes.STRING(20))
-  declare code: CreationOptional<string>;
-
   @NotNull
   @Attribute(DataTypes.STRING(256))
   declare name: string;

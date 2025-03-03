@@ -11,13 +11,11 @@ import {
 import {
   AllowNull,
   Attribute,
-  AutoIncrement,
   Default,
   Index,
   NotNull,
   PrimaryKey,
   Table,
-  ValidateAttribute,
 } from "@sequelize/core/decorators-legacy";
 import { IsDecimal, IsEmail, NotEmpty } from "@sequelize/validator.js";
 

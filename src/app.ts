@@ -17,9 +17,10 @@ class App {
   constructor() {
     this.app = express();
     this.initializeMiddlewares();
-    this.initializeInfrastructure();
-    this.initializeApplication();
-    this.initializeErrorHandling();
+    this.initializeInfrastructure().then(() => {
+      this.initializeApplication();
+      this.initializeErrorHandling();
+    });
   }
 
   private async initializeInfrastructure() {

@@ -9,3 +9,5 @@ export const IndexNames = {
     Name: "name",
   },
 } as const;
+
+export type IndexNames = typeof IndexNames[keyof typeof IndexNames]

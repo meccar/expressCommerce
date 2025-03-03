@@ -47,4 +47,7 @@ export const messages = {
     notConfigured: (service: string): string =>
       `${service} has not been configured.`,
   },
-};
+} as const;
+
+export type messages = typeof messages[keyof typeof messages]
+

@@ -7,4 +7,6 @@ export const Api = {
         register: '/register',
         login: '/login'
     },
-}
+} as const
+
+export type Api = typeof Api[keyof typeof Api]
