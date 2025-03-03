@@ -17,7 +17,7 @@ export const CONFIG = {
   SYSTEM: {
     PORT: process.env.PORT || "8000",
     ENV: process.env.NODE_ENV,
-    ENCRYPT_SENSITIVE_SECRET_KEY: process.env.ENCRYPT_SENSITIVE_SECRET_KEY
+    ENCRYPT_SENSITIVE_SECRET_KEY: process.env.ENCRYPT_SENSITIVE_SECRET_KEY,
   },
   TELEMETRY: {
     OTLP_ENDPOINT: process.env.TELEMETRY_OTLP_ENDPOINT,
@@ -31,5 +31,12 @@ export const CONFIG = {
     SENDGRID_API: process.env.SENDGRID_API || "123",
     SENDGRID_MAIL_SENDER:
       process.env.SENDGRID_MAIL_SENDER || "default@example.com",
+  },
+  VAULT: {
+    VAULT_ADDR: "",
+    VAULT_TOKEN: "",
+    USE_TRANSIT_ENGINE: true,
+    TRANSIT_PATH: "",
+    KEY_NAME: "",
   },
 };
