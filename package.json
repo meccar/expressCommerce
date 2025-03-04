@@ -5,7 +5,7 @@
   "scripts": {
     "start:dev": "nodemon",
     "start:prod": "cross-env NODE_ENV=production node dist/server.js",
-    "start:debug": "cross-env NODE_ENV=development ts-node src/server.ts",
+    "start:debug": "nodemon",
     "build": "tsc"
   },
   "dependencies": {

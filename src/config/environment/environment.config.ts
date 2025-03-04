@@ -17,7 +17,7 @@ export const CONFIG = {
   SYSTEM: {
     PORT: process.env.PORT || "8000",
     ENV: process.env.NODE_ENV,
-    ENCRYPT_SENSITIVE_SECRET_KEY: process.env.ENCRYPT_SENSITIVE_SECRET_KEY,
+    ENCRYPT_SENSITIVE_SECRET_KEY: process.env.ENCRYPT_SENSITIVE_SECRET_KEY || "hvs.uGyHI2rnF77EvdhbMcHZWSym",
   },
   TELEMETRY: {
     OTLP_ENDPOINT: process.env.TELEMETRY_OTLP_ENDPOINT,
@@ -33,10 +33,10 @@ export const CONFIG = {
       process.env.SENDGRID_MAIL_SENDER || "default@example.com",
   },
   VAULT: {
-    VAULT_ADDR: "",
-    VAULT_TOKEN: "",
-    USE_TRANSIT_ENGINE: true,
-    TRANSIT_PATH: "",
-    KEY_NAME: "",
+    VAULT_ADDR: process.env.VAULT_ADDR || 'http://127.0.0.1:8200',
+    VAULT_TOKEN: process.env.VAULT_TOKEN || "hvs.YGtUKAakPe0heHNRn4FD4Byo",
+    USE_TRANSIT_ENGINE: process.env.USE_VAULT_TRANSIT === 'true',
+    TRANSIT_PATH: process.env.VAULT_TRANSIT_PATH || 'transit',
+    KEY_NAME: process.env.VAULT_KEY_NAME || 'database-encryption'
   },
 };

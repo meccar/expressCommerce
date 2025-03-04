@@ -13,7 +13,7 @@ interface EncryptedModel extends Model {
   ): Promise<this>;
 }
 
-interface EncryptableModelStatic extends ModelStatic<EncryptedModel> {
+export interface EncryptableModelStatic extends ModelStatic<EncryptedModel> {
   count(options?: { transaction?: Transaction }): Promise<number>;
   findAll(options?: {
     limit?: number;
@@ -90,7 +90,7 @@ class KeyRotationService extends ServiceBase {
     }
 
     const oldKeyPath = `${this.keyPath}_previous`;
-    const oldKeyText = await vaultService.getKey(oldKeyPath);
+    const oldKeyText = await vaultService.getKey(this.keyPath!);
     const newKeyText = await vaultService.rotateKey(this.keyPath!);
 
     await this.withTransaction(async (transaction) => {

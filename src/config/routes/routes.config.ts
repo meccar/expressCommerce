@@ -3,6 +3,7 @@ import { Api, messages, ServiceBase } from "@common/index";
 import { UserAccountRoute } from "@modules/index";
 import { CONFIG } from "../environment/environment.config";
 import { logger } from "@infrastructure/config";
+import { KeyRotationRoute } from "@modules/keyRotation/keyRotation.route";
 
 class RoutesConfiguration extends ServiceBase {
   private _app: express.Application | null = null;
@@ -16,10 +17,14 @@ class RoutesConfiguration extends ServiceBase {
 
     const apiBasePath = `/${Api.apiRoot}/${CONFIG.API.API_VERSION}`;
     const userAccountRoute = express.Router();
+    const adminRoute = express.Router();
 
     new UserAccountRoute(userAccountRoute);
+    new KeyRotationRoute(adminRoute);
 
     this._app.use(apiBasePath, userAccountRoute);
+    this._app.use(apiBasePath, adminRoute);
+
     logger.info(messages.service.configured(RoutesConfiguration.name));
   }
 

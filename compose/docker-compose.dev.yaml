@@ -15,6 +15,21 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
+  vault:
+    image: vault:1.13.3
+    container_name: vault
+    restart: always
+    volumes:
+      - ./vault/data:/vault/data
+      - ./vault/config:/vault/config
+    environment:
+      VAULT_ADDR: "http://vault:8200"
+      VAULT_LOCAL_CONFIG: '{"backend": {"file": {"path": "/vault/data"}}, "listener": {"tcp": {"address": "0.0.0.0:8200", "tls_disable": "1"}}, "ui": true}'
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "8200:8200"
+
 networks:
   mysql_network:
     driver: bridge

@@ -1,7 +1,8 @@
 export const Api = {
     apiRoot: 'api',
     service: {
-        userAccount: "/user"
+        userAccount: "/user",
+        admin: "/admin"
     },
     method :{
         register: '/register',

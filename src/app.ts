@@ -37,10 +37,10 @@ class App {
       CONFIG.VAULT.VAULT_TOKEN
     );
 
-    await keyRotationService.configure("secret/data/database/encryption-key", {
+    await keyRotationService.configure("/secret/data/my-key", {
       useTransitEngine: CONFIG.VAULT.USE_TRANSIT_ENGINE,
-      transitPath: CONFIG.VAULT.TRANSIT_PATH || "transit",
-      keyName: CONFIG.VAULT.KEY_NAME || "database-encryption",
+      transitPath: CONFIG.VAULT.TRANSIT_PATH,
+      keyName: CONFIG.VAULT.KEY_NAME,
     });
 
     await swaggerConfiguration.configure(this.app);
