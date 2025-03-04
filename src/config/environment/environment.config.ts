@@ -34,7 +34,7 @@ export const CONFIG = {
   },
   VAULT: {
     VAULT_ADDR: process.env.VAULT_ADDR || 'http://127.0.0.1:8200',
-    VAULT_TOKEN: process.env.VAULT_TOKEN || "hvs.YGtUKAakPe0heHNRn4FD4Byo",
+    VAULT_TOKEN: process.env.VAULT_TOKEN || "",
     USE_TRANSIT_ENGINE: process.env.USE_VAULT_TRANSIT === 'true',
     TRANSIT_PATH: process.env.VAULT_TRANSIT_PATH || 'transit',
     KEY_NAME: process.env.VAULT_KEY_NAME || 'database-encryption'
