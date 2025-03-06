@@ -13,16 +13,6 @@ import {
 @Table({
   tableName: "UserRole",
   underscored: true,
-  indexes: [
-    {
-      name: "idx_userrole_usercode",
-      fields: ["user_code"],
-    },
-    {
-      name: "idx_userrole_rolecode",
-      fields: ["role_code"],
-    },
-  ],
 })
 export class UserRole extends BaseModel<
   InferAttributes<UserRole>,

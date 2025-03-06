@@ -17,12 +17,6 @@ import {
 @Table({
   tableName: "RoleClaim",
   underscored: true,
-  indexes: [
-    {
-      name: "idx_roleclaim_rolecode",
-      fields: ["role_code"],
-    },
-  ],
 })
 export class RoleClaim extends Model<
   InferAttributes<RoleClaim>,

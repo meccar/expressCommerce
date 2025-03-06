@@ -22,18 +22,6 @@ import { IsDecimal, IsEmail, NotEmpty } from "@sequelize/validator.js";
 @Table({
   tableName: TableNames.UserAccount,
   underscored: true,
-  indexes: [
-    {
-      name: IndexNames.UserAccount.Email,
-      unique: true,
-      fields: [FieldNames.UserAccount.Email],
-    },
-    {
-      name: IndexNames.UserAccount.Username,
-      unique: true,
-      fields: [FieldNames.UserAccount.Username],
-    },
-  ],
   comment: "Stores user authentication and security information",
 })
 export class UserAccount extends Model<

@@ -9,21 +9,6 @@ import { AllowNull, Attribute, Default, NotNull, Table } from "@sequelize/core/d
 @Table({
   tableName: TableNames.UserProfile,
   underscored: true,
-  indexes: [
-    // {
-    //   name: IndexNames.UserProfile.Code,
-    //   unique: true,
-    //   fields: [FieldNames.UserProfile.Code],
-    // },
-    {
-      name: IndexNames.UserProfile.Name,
-      unique: false,
-      fields: [
-        FieldNames.UserProfile.FirstName,
-        FieldNames.UserProfile.LastName,
-      ],
-    },
-  ],
   comment: "Stores user profile information",
 })
 export class UserProfile extends BaseModel<

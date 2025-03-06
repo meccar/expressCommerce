@@ -11,13 +11,6 @@ import { Attribute, AutoIncrement, Index, NotNull, PrimaryKey, Table } from "@se
 @Table({
   tableName: "Role",
   underscored: true,
-  indexes: [
-    {
-      name: "idx_role_name",
-      unique: true,
-      fields: ["name"],
-    },
-  ],
 })
 export class Role extends BaseModel<
   InferAttributes<Role>,

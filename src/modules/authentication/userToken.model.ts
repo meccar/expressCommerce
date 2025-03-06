@@ -11,12 +11,6 @@ import { Attribute, PrimaryKey, Table } from "@sequelize/core/decorators-legacy"
 @Table({
   tableName: "UserToken",
   underscored: true,
-  indexes: [
-    {
-      name: "idx_usertoken_loginprovider",
-      fields: ["login_provider"],
-    },
-  ],
 })
 export class UserToken extends Model<
   InferAttributes<UserToken>,
@@ -24,7 +18,7 @@ export class UserToken extends Model<
 > {
   @Attribute(DataTypes.STRING(20))
   @PrimaryKey
-  declare userCode: string;
+  declare userAccountCode: string;
 
   @Attribute(DataTypes.STRING(450))
   declare loginProvider: string;

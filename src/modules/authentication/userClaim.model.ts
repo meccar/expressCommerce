@@ -9,13 +9,7 @@ import { Attribute, AutoIncrement, NotNull, PrimaryKey, Table } from "@sequelize
 
 @Table({
   tableName: "UserClaim",
-  // underscored: true,
-  // indexes: [
-  //   {
-  //     name: "idx_userclaim_roleid",
-  //     fields: ["role_id"],
-  //   },
-  // ],
+  underscored: true,
 })
 export class UserClaim extends Model<
   InferAttributes<UserClaim>,

@@ -10,19 +10,13 @@ import { Attribute, PrimaryKey, Table } from "@sequelize/core/decorators-legacy"
 @Table({
   tableName: "UserLogin",
   underscored: true,
-  // indexes: [
-  //   {
-  //     name: "idx_userlogin_userid",
-  //     fields: ["user_id"],
-  //   },
-  // ],
 })
 export class UserLogin extends Model<
   InferAttributes<UserLogin>,
   InferCreationAttributes<UserLogin>
 > {
   @Attribute(DataTypes.STRING)
-  declare loginProvider: CreationOptional<number>;
+  declare loginProvider: string;
 
   @Attribute(DataTypes.STRING)
   declare providerKey: string;
@@ -32,5 +26,5 @@ export class UserLogin extends Model<
 
   @Attribute(DataTypes.STRING(20))
   @PrimaryKey
-  declare userCode: string;
+  declare userAccountCode: string;
 }
