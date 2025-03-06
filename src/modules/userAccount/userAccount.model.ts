@@ -90,7 +90,7 @@ export class UserAccount extends Model<
 
   @Attribute(DataTypes.DATE)
   @AllowNull
-  declare lockoutEnd: Date;
+  declare lockoutEnd: Date | null;
 
   @NotNull
   @Attribute(DataTypes.BOOLEAN)

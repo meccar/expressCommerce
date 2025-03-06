@@ -13,6 +13,7 @@ export const messages = {
     validation_failed_422: "Validation failed. Please check your input.",
     internal_server_error_500:
       "A server error occurred. Please try again later.",
+    not_implemented_501: "The requested operation is not implemented on this server.",
   },
 
   // Cluster-related messages

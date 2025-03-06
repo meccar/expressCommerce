@@ -1,21 +1,13 @@
-import { RootRepository } from "@infrastructure/repository/rootRepository";
-import { UserAccount } from "./userAccount.model";
 import { mailService } from "@infrastructure/index";
 import { BadRequestException, compare, encrypt, Transactional } from "@common/index";
-import { UserProfile } from "@modules/userProfile";
-import { Op, Transaction } from "@sequelize/core";
-import { CONFIG } from "@config/index";
-import { AuthenticationService } from "@modules/authentication/authentication.service";
+import { UserProfileRepository } from "@modules/userProfile";
+import { Transaction } from "@sequelize/core";
 import { UserAccountRepository } from "./userAccount.repository";
 
 export class UserAccountService {
-  constructor(
-    private authenticationService: AuthenticationService,
-    private userAccountRepository: UserAccountRepository,
-  ) {
-    this.authenticationService = authenticationService;
-    this.userAccountRepository = userAccountRepository;
-  }
+  private userProfileRepository: UserProfileRepository = new UserProfileRepository();
+  private userAccountRepository: UserAccountRepository = new UserAccountRepository();
+  constructor() {}
 
   @Transactional()
   public async register(userData: any, transaction?: Transaction): Promise<any> {
@@ -26,35 +18,11 @@ export class UserAccountService {
         "Please enter email, username and password"
       );
 
-    const existingUser = await this.userAccountRepository.findOne({
-      where: {
-        [Op.or]: [{ email }, { username }],
-      },
-    });
+    const userAccount = await this.userAccountRepository.createAsync(email, username, password, transaction!)
+    if (!userAccount)
+      throw new BadRequestException();
 
-    if (existingUser)
-      throw new BadRequestException("Email or username already in use");
-
-    const hashedPassword = await encrypt(password, CONFIG.SYSTEM.ENCRYPT_SENSITIVE_SECRET_KEY!, true);
-
-    const userAccount = await this.userAccountRepository.create(
-      {
-        email,
-        username,
-        password: hashedPassword,
-        isActive: true,
-      },
-      { transaction }
-    );
-
-    const userProfile = await UserProfile.create(
-      {
-        userAccountCode: userAccount.code,
-      } as any,
-      { transaction }
-    );
-
-    const { password: _, ...userWithoutPassword } = userAccount.toJSON();
+    const userProfile = await this.userProfileRepository.createAsync(userAccount.code, transaction!);
 
     await mailService.send({
       to: email,
@@ -64,7 +32,7 @@ export class UserAccountService {
     });
 
     return {
-      ...userWithoutPassword,
+      user: userAccount.toJSON(),
       profile: userProfile.toJSON(),
     };
   }
@@ -72,27 +40,16 @@ export class UserAccountService {
   @Transactional()
   public async login(loginData: any, transaction?: Transaction): Promise<any> {
     const { email, username, password } = loginData;
+
     if (!((email || username) && password))
       throw new BadRequestException(
         "Please enter email, username and password"
       );
 
-    const existingUser = await this.userAccountRepository.findByEmailOrUsername(email, username);
+    const token = await this.userAccountRepository.validateUserAsync(email, username, password, transaction!)
+    if (!token)
+      throw new BadRequestException()
 
-    if (!existingUser)
-      throw new BadRequestException(
-        "Email, username or password is not correct"
-      );
-
-    if (await !compare(password, existingUser.password, CONFIG.SYSTEM.ENCRYPT_SENSITIVE_SECRET_KEY!, true))
-      throw new BadRequestException(
-        "Email, username or password is not correct"
-      );
-
-    const token = await this.authenticationService.generateToken(username, {expiresIn: "1", transaction});
-    
-    await this.authenticationService.login(existingUser.code, email, email, "Local", transaction);
-    
     return {
       token
     };

@@ -25,3 +25,9 @@ export class NotFoundException extends HttpException {
     super(statusCodes.NOT_FOUND, message ?? messages.error.not_found_404);
   }
 }
+
+export class NotSupportedException extends HttpException {
+  constructor(message?: string) {
+    super(statusCodes.NOT_IMPLEMENTED, message ?? messages.error.not_implemented_501);
+  }
+}

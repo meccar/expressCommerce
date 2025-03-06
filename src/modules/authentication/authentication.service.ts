@@ -2,14 +2,15 @@ import passport from 'passport';
 import { Strategy as JwtStrategy, ExtractJwt, StrategyOptions } from 'passport-jwt';
 import * as jwt from 'jsonwebtoken';
 import { CONFIG } from "@config/index";
-import { BadRequestException, UnauthorizedException } from "@common/index";
-import { Op, Transaction } from "@sequelize/core";
-import { UserAccount } from '@modules/userAccount';
+import { compare, UnauthorizedException } from "@common/index";
+import { Transaction } from "@sequelize/core";
+import { UserAccount, UserAccountRepository } from '@modules/userAccount';
 import { UserClaim } from './userClaim.model';
 import { UserLogin } from './userLogin.model';
 import { UserToken } from './userToken.model';
 import { Secret, SignOptions } from 'jsonwebtoken';
 import type { Algorithm } from "jsonwebtoken";
+import { SignInResult } from '@infrastructure/index';
 
 interface JwtPayload {
     code: string;
@@ -19,7 +20,17 @@ interface JwtPayload {
     providers?: Array<{provider: string, providerKey: string}>;
 }
 
+interface SignInOptions {
+    isPersistent?: boolean;
+    lockoutOnFailure?: boolean;
+    requireConfirmed?: boolean;
+}
+
 export class AuthenticationService {
+    private readonly MAX_FAILED_ATTEMPTS = 5;
+    private readonly DEFAULT_LOCKOUT_MINUTES = 15;
+    private userAccountRepository: UserAccountRepository = new UserAccountRepository();
+
     constructor() {
         this.initializePassport();
     }
@@ -55,7 +66,9 @@ export class AuthenticationService {
 
             if (!user.isActive) return done(null, false, { message: 'Account is inactive' });
             
-
+            if (user.lockoutEnd && new Date(user.lockoutEnd) > new Date())
+                return done(null, false, { message: 'Account is locked out' });
+            
             const claims = await UserClaim.findAll({
                 where: { userAccountCode: user.code }
             });
@@ -81,7 +94,7 @@ export class AuthenticationService {
         }));
     }
 
-public async generateToken(user: UserAccount, options: { expiresIn?: string, transaction?: Transaction } = {}): Promise<string> {
+public async generateToken(user: UserAccount, options: { expiresIn?: string, isPersistent?: boolean, transaction?: Transaction } = {}): Promise<string> {
     const claims = await UserClaim.findAll({
         where: { userAccountCode: user.code },
         transaction: options.transaction
@@ -107,19 +120,80 @@ public async generateToken(user: UserAccount, options: { expiresIn?: string, tra
     };
 
     const algorithm: Algorithm = "HS256";
+    const expiresIn = options.isPersistent ? '30d' : (options.expiresIn || '1d');
 
     return jwt.sign(
         payload, 
         this.getJwtSecret() as Secret, 
         { 
             algorithm: algorithm,
-            expiresIn: options.expiresIn || '1d',
+            expiresIn: expiresIn,
         } as SignOptions
     );
 }
 
     public verifyToken(token: string): JwtPayload {
         return jwt.verify(token, this.getJwtSecret()) as JwtPayload;
+    }
+
+    public async passwordSignInAsync(
+        user: UserAccount, 
+        password: string, 
+        options: SignInOptions = {}
+    ): Promise<SignInResult> {
+        const { isPersistent = false, lockoutOnFailure = true, requireConfirmed = true } = options;
+        
+        if (requireConfirmed && !user.emailConfirmed)
+            return { 
+                succeeded: false, 
+                isNotAllowed: true, 
+                message: 'Email not confirmed' 
+            };
+        
+        
+        if (user.lockoutEnd && new Date(user.lockoutEnd) > new Date()) 
+            return { 
+                succeeded: false, 
+                isLockedOut: true, 
+                message: 'Account is locked out' 
+            };
+        
+        const isPasswordValid = await compare(password, user.password, CONFIG.SYSTEM.ENCRYPT_SENSITIVE_SECRET_KEY!, true);
+        
+        if (!isPasswordValid) {
+            if (lockoutOnFailure) {
+                user.accessFailedCount = (user.accessFailedCount || 0) + 1;
+                
+                if (user.accessFailedCount >= this.MAX_FAILED_ATTEMPTS) {
+                    const lockoutEnd = new Date();
+                    lockoutEnd.setMinutes(lockoutEnd.getMinutes() + this.DEFAULT_LOCKOUT_MINUTES);
+                    user.lockoutEnd = lockoutEnd;
+                }
+                
+                await user.save();
+            }
+            
+            return { succeeded: false, message: 'Invalid login attempt' };
+        }
+        
+        if (user.accessFailedCount > 0) {
+            user.accessFailedCount = 0;
+            user.lockoutEnd = null;
+            await user.save();
+        }
+        
+        if (user.twoFactorEnabled)
+            return { 
+                succeeded: false, 
+                requiresTwoFactor: true,
+                message: 'Two-factor authentication required' 
+            };
+        
+        const token = await this.generateToken(user, { isPersistent });
+        
+        await user.save();
+        
+        return { succeeded: true, token };
     }
 
     public async storeToken(
@@ -150,22 +224,7 @@ public async generateToken(user: UserAccount, options: { expiresIn?: string, tra
         }, { transaction });
     }
 
-    public async storeUserLogin(
-        userAccountCode: string,
-        loginProvider: string,
-        providerKey: string,
-        providerDisplayName: string,
-        transaction?: Transaction
-    ): Promise<UserLogin> {
-        return UserLogin.create({
-            userAccountCode,
-            loginProvider,
-            providerKey,
-            providerDisplayName
-        }, { transaction });
-    }
-
-    public async login(
+    public async signInWithClaimsAsync(
         userAccountCode: string,
         loginProvider: string,
         providerKey: string,
