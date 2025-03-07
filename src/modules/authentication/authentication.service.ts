@@ -20,7 +20,7 @@ interface JwtPayload {
     providers?: Array<{provider: string, providerKey: string}>;
 }
 
-interface SignInOptions {
+export interface SignInOptions {
     isPersistent?: boolean;
     lockoutOnFailure?: boolean;
     requireConfirmed?: boolean;
