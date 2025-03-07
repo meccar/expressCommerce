@@ -6,7 +6,6 @@ export interface SignInResult {
     isNotAllowed?: boolean;
     requiresTwoFactor?: boolean;
     message?: string;
-    token?: string;
 }
 
 export interface ExternalLoginInfo {
