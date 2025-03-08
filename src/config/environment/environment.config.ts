@@ -28,10 +28,12 @@ export const CONFIG = {
   API: {
     API_VERSION: process.env.API_VERSION,
   },
-  SENDGRID: {
-    SENDGRID_API: process.env.SENDGRID_API || "123",
-    SENDGRID_MAIL_SENDER:
-      process.env.SENDGRID_MAIL_SENDER || "default@example.com",
+  SMTP: {
+    SMTP_HOST: process.env.SMTP_HOST!,
+    SMTP_PORT: process.env.SMTP_PORT,
+    SMTP_USER: process.env.SMTP_USER!,
+    SMTP_PASS: process.env.SMTP_PASS!,
+    SMTP_MAIL_SENDER: process.env.SMTP_MAIL_SENDER!,
   },
   VAULT: {
     VAULT_ADDR: process.env.VAULT_ADDR || 'http://127.0.0.1:8200',

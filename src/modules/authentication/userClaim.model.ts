@@ -28,5 +28,5 @@ export class UserClaim extends Model<
   declare claimType: string 
   
   @Attribute(DataTypes.STRING)
-  declare claimVale: string 
+  declare claimValue: string 
 }

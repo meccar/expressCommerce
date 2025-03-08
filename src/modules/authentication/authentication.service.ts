@@ -8,20 +8,34 @@ import * as jwt from "jsonwebtoken";
 import { CONFIG } from "@config/index";
 import { compare, UnauthorizedException } from "@common/index";
 import { Transaction } from "@sequelize/core";
-import { UserAccount } from "@modules/userAccount";
+import { UserAccount, UserAccountRepository } from "@modules/userAccount";
 import { UserClaim } from "./userClaim.model";
 import { UserLogin } from "./userLogin.model";
 import { UserToken } from "./userToken.model";
 import { Secret, SignOptions } from "jsonwebtoken";
 import type { Algorithm } from "jsonwebtoken";
 import { SignInResult } from "@infrastructure/index";
+import { UserLoginRepository } from "./userLogin.repository";
+import { UserClaimRepository } from "./userClaim.repository";
+import { UserTokenRepository } from "./userToken.repository";
+import crypto from "crypto";
 
-interface JwtPayload {
+interface JwtAccessPayload {
   code: string;
   email: string;
   username: string;
+  tokenType: 'access';
   claims?: Array<{ type: string; value: string }>;
   providers?: Array<{ provider: string; providerKey: string }>;
+  jti: string;
+}
+
+interface JwtRefreshPayload {
+  code: string;
+  email: string;
+  username: string;
+  tokenType: 'refresh';
+  jti: string;
 }
 
 export interface SignInOptions {
@@ -30,10 +44,19 @@ export interface SignInOptions {
   requireConfirmed?: boolean;
 }
 
-export class AuthenticationRepository {
+export class AuthenticationService {
   private readonly MAX_FAILED_ATTEMPTS = 5;
   private readonly DEFAULT_LOCKOUT_MINUTES = 15;
 
+  private userLoginRepository: UserLoginRepository =
+    new UserLoginRepository();
+  private userClaimRepository: UserClaimRepository =
+    new UserClaimRepository();
+  private userTokenRepository: UserTokenRepository =
+    new UserTokenRepository();
+  private userAccountRepository: UserAccountRepository =
+    new UserAccountRepository();
+    
   constructor() {
     this.initializePassport();
   }
@@ -49,8 +72,8 @@ export class AuthenticationRepository {
     };
 
     passport.use(
-      new JwtStrategy(opts, async (jwt_payload: JwtPayload, done) => {
-        const user = await UserAccount.findOne({
+      new JwtStrategy(opts, async (jwt_payload: JwtAccessPayload, done) => {
+        const user = await this.userAccountRepository.findOne({
           where: { code: jwt_payload.code },
           attributes: { exclude: ["password"] },
           include: [
@@ -77,21 +100,21 @@ export class AuthenticationRepository {
         if (user.lockoutEnd && new Date(user.lockoutEnd) > new Date())
           return done(null, false, { message: "Account is locked out" });
 
-        const claims = await UserClaim.findAll({
+        const claims = await this.userClaimRepository.findAll({
           where: { userAccountCode: user.code },
         });
 
-        const logins = await UserLogin.findAll({
+        const logins = await this.userLoginRepository.findAll({
           where: { userAccountCode: user.code },
         });
 
         const userWithDetails = {
           ...user.toJSON(),
-          claims: claims.map((claim) => ({
+          claims: claims.rows.map((claim) => ({
             type: claim.claimType,
-            value: claim.claimVale,
+            value: claim.claimValue,
           })),
-          providers: logins.map((login) => ({
+          providers: logins.rows.map((login) => ({
             provider: login.loginProvider,
             providerKey: login.providerKey,
             displayName: login.providerDisplayName,
@@ -110,46 +133,73 @@ export class AuthenticationRepository {
       isPersistent?: boolean;
       transaction?: Transaction;
     } = {}
-  ): Promise<string> {
-    const claims = await UserClaim.findAll({
-      where: { userAccountCode: user.code },
-      transaction: options.transaction,
-    });
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const [claimsResult, loginsResult] = await Promise.all([
+      this.userClaimRepository.findAll({
+        where: { userAccountCode: user.code },
+        transaction: options.transaction,
+      }),
+      this.userLoginRepository.findAll({
+        where: { userAccountCode: user.code },
+        transaction: options.transaction,
+      })
+    ]);
 
-    const logins = await UserLogin.findAll({
-      where: { userAccountCode: user.code },
-      transaction: options.transaction,
-    });
+    const claims = claimsResult.rows || claimsResult;
+    const logins = loginsResult.rows || loginsResult;
 
-    const payload: JwtPayload = {
+    const accessPayload: JwtAccessPayload = {
       code: user.code,
-      email: user.email,
-      username: user.username,
-      claims: claims.map((claim) => ({
+      email: user.email || "",
+      username: user.username || "",
+      tokenType: 'access',
+      claims: Array.isArray(claims) ? claims.map((claim) => ({
         type: claim.claimType,
-        value: claim.claimVale,
-      })),
-      providers: logins.map((login) => ({
+        value: claim.claimValue,
+      })) : [],
+      providers: Array.isArray(logins) ? logins.map((login) => ({
         provider: String(login.loginProvider),
         providerKey: login.providerKey,
-      })),
+      })) : [],
+      jti: crypto.randomUUID()
+    };
+
+    const refreshPayload: JwtRefreshPayload = {
+      code: user.code,
+      email: user.email || "",
+      username: user.username || "",
+      tokenType: 'refresh',
+      jti: crypto.randomUUID()
     };
 
     const algorithm: Algorithm = "HS256";
-    const expiresIn = options.isPersistent ? "30d" : options.expiresIn || "1d";
 
-    return jwt.sign(
-      payload,
+    const accessExpiresIn  = options.isPersistent ? "30m" : options.expiresIn || "15m";
+    const refreshExpiresIn  = options.isPersistent ? "30d" : options.expiresIn || "1d";
+
+    const accessToken = jwt.sign(
+      accessPayload,
       this.getJwtSecret() as Secret,
       {
-        algorithm: algorithm,
-        expiresIn: expiresIn,
+        algorithm,
+        expiresIn: accessExpiresIn,
       } as SignOptions
     );
+
+    const refreshToken = jwt.sign(
+      refreshPayload,
+      this.getJwtSecret(),
+      {
+        algorithm,
+        expiresIn: refreshExpiresIn,
+      } as SignOptions
+    );
+
+    return { accessToken, refreshToken };
   }
 
-  public verifyToken(token: string): JwtPayload {
-    return jwt.verify(token, this.getJwtSecret()) as JwtPayload;
+  public verifyToken(token: string): JwtAccessPayload {
+    return jwt.verify(token, this.getJwtSecret()) as JwtAccessPayload;
   }
 
   public async passwordSignInAsync(
@@ -222,7 +272,7 @@ export class AuthenticationRepository {
     value: string,
     transaction?: Transaction
   ): Promise<UserToken> {
-    return UserToken.create(
+    return this.userTokenRepository.create(
       {
         userAccountCode,
         loginProvider,
@@ -236,14 +286,14 @@ export class AuthenticationRepository {
   public async storeClaim(
     userAccountCode: string,
     claimType: string,
-    claimVale: string,
+    claimValue: string,
     transaction?: Transaction
   ): Promise<UserClaim> {
-    return UserClaim.create(
+    return this.userClaimRepository.create(
       {
         userAccountCode,
         claimType,
-        claimVale,
+        claimValue,
       },
       { transaction }
     );
@@ -256,7 +306,7 @@ export class AuthenticationRepository {
     providerDisplayName: string,
     transaction?: Transaction
   ): Promise<UserLogin> {
-    return UserLogin.create(
+    return this.userLoginRepository.create(
       {
         userAccountCode,
         loginProvider,
@@ -271,7 +321,7 @@ export class AuthenticationRepository {
     loginProvider: string,
     providerKey: string
   ): Promise<UserAccount | null> {
-    const userLogin = await UserLogin.findOne({
+    const userLogin = await this.userLoginRepository.findOne({
       where: {
         loginProvider,
         providerKey,
@@ -281,7 +331,7 @@ export class AuthenticationRepository {
 
     if (!userLogin) return null;
 
-    return UserAccount.findOne({
+    return this.userAccountRepository.findOne({
       where: { code: userLogin.userAccountCode },
       attributes: { exclude: ["password"] },
     });
@@ -296,13 +346,13 @@ export class AuthenticationRepository {
   ) {
     return async (req: any, res: any, next: any) => {
       if (!req.user.claims) {
-        const claims = await UserClaim.findAll({
+        const claims = await this.userClaimRepository.findAll({
           where: { userAccountCode: req.user.code },
         });
 
-        req.user.claims = claims.map((claim) => ({
+        req.user.claims = claims.rows.map((claim) => ({
           type: claim.claimType,
-          value: claim.claimVale,
+          value: claim.claimValue,
         }));
       }
 
@@ -321,5 +371,9 @@ export class AuthenticationRepository {
 
       next();
     };
+  }
+
+  public generateConcurrencyStampAsync() {
+    return crypto.randomUUID();
   }
 }

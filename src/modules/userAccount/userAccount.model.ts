@@ -34,13 +34,11 @@ export class UserAccount extends Model<
   @Default(sql.uuidV1)
   declare code: CreationOptional<string>;
 
-  @NotNull
   @Attribute(DataTypes.STRING(255))
   @IsEmail({msg: "Please enter a valid email"})
   @NotEmpty({msg: "Please enter your email"})
   declare email: string;
 
-  @NotNull
   @Attribute(DataTypes.STRING(100))
   @NotEmpty({msg: "Please enter your username"})
   declare username: string;

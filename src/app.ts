@@ -28,8 +28,11 @@ class App {
   private async initializeInfrastructure() {
     await databaseService.configure(process.pid);
     await mailService.configure(
-      CONFIG.SENDGRID.SENDGRID_API,
-      CONFIG.SENDGRID.SENDGRID_MAIL_SENDER
+      CONFIG.SMTP.SMTP_HOST,
+      Number(CONFIG.SMTP.SMTP_PORT),
+      CONFIG.SMTP.SMTP_USER,
+      CONFIG.SMTP.SMTP_PASS,
+      CONFIG.SMTP.SMTP_MAIL_SENDER
     );
 
     await vaultService.configure(

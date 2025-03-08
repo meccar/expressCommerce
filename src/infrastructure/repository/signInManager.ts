@@ -3,7 +3,7 @@ import {
   PasswordVerificationResult,
   SignInResult,
 } from "@infrastructure/index";
-import { AuthenticationService } from "../../modules/authentication/authentication.repository";
+import { AuthenticationService } from "../../modules/authentication/authentication.service";
 import { UserAccount, UserAccountRepository } from "@modules/userAccount";
 import bcrypt from "bcrypt";
 import { Transaction } from "@sequelize/core";

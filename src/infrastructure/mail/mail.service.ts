@@ -1,46 +1,79 @@
 import { messages } from "@common/constants";
 import { BadRequestException } from "@common/exceptions";
 import { logger } from "@infrastructure/config";
-import sendGrid from "@sendgrid/mail";
-import { MailData, MailDataRequired } from "@sendgrid/helpers/classes/mail";
 import { ServiceBase } from "@common/index";
+import Email from "email-templates";
+import path from "path";
 
 class MailService extends ServiceBase {
-  private apiKey: string | null = null;
+  private emailClient: Email | null = null;
   private senderEmail: string | null = null;
-  private client: typeof sendGrid | null = null;
-  private prepareMailData(data: Partial<MailData>): MailDataRequired {
-    if (!data.from && this.senderEmail) data.from = this.senderEmail;
-
-    return data as MailDataRequired;
-  }
+  private templatesDir: string = path.join(__dirname, "templates");
 
   constructor() {
     super(MailService.name);
   }
 
-  public async configure(apiKey: string, defaultSender: string): Promise<void> {
-    this.apiKey = apiKey;
-    this.senderEmail = defaultSender;
+  public async configure(
+    host: string,
+    port: number,
+    user: string,
+    pass: string,
+    sender: string,
+  ): Promise<void> {
 
-    sendGrid.setApiKey(this.apiKey);
-    this.client = sendGrid;
+      this.emailClient = new Email({
+        message: {
+          from: sender,
+        },
+        transport: {
+          host,
+          port,
+          secure: port === 465,
+          auth: { user, pass },
+        },
+        views: {
+          root: this.templatesDir,
+          options: {
+            extension: 'hbs'
+          }
+        },
+        send: true,
+        preview: process.env.NODE_ENV !== 'production',
+        juice: true,
+        juiceResources: {
+          preserveImportant: true
+        }
+      });
+      
+    this.senderEmail = sender;
+    
     logger.info(messages.service.configured(MailService.name));
   }
 
   public isConfigured(): boolean {
-    return !!this.client && !!this.apiKey && !!this.senderEmail;
+    return !!this.emailClient && !!this.senderEmail;
   }
 
-  public async send(mailData: Partial<MailData>): Promise<boolean> {
+  public async send(
+    to: string,
+    subject: string,
+    template: string,
+    context: Record<string, any> = {}
+  ): Promise<boolean> {
     if (!this.isConfigured) {
       logger.error(messages.service.notConfigured(typeof MailService));
       throw new BadRequestException();
     }
 
-    const preparedData = this.prepareMailData(mailData);
-
-    await this.client!.send(preparedData);
+    await this.emailClient!.send({
+      template: template,
+      message: {
+        to,
+        subject
+      },
+      locals: context
+    });
 
     return true;
   }
