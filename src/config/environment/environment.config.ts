@@ -18,7 +18,8 @@ export const CONFIG = {
     PORT: process.env.PORT || "8000",
     ENV: process.env.NODE_ENV,
     ENCRYPT_SENSITIVE_SECRET_KEY: process.env.ENCRYPT_SENSITIVE_SECRET_KEY,
-    JWT_SECRET: process.env.JWT_SECRET || "",
+    JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || "",
+    JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || "",
   },
   TELEMETRY: {
     OTLP_ENDPOINT: process.env.TELEMETRY_OTLP_ENDPOINT,

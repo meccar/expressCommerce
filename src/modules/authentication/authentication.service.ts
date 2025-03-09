@@ -6,7 +6,11 @@ import {
 } from "passport-jwt";
 import * as jwt from "jsonwebtoken";
 import { CONFIG } from "@config/index";
-import { compare, UnauthorizedException } from "@common/index";
+import {
+  compare,
+  NotFoundException,
+  UnauthorizedException,
+} from "@common/index";
 import { Transaction } from "@sequelize/core";
 import { UserAccount, UserAccountRepository } from "@modules/userAccount";
 import { UserClaim } from "./userClaim.model";
@@ -24,7 +28,7 @@ interface JwtAccessPayload {
   code: string;
   email: string;
   username: string;
-  tokenType: 'access';
+  tokenType: "access";
   claims?: Array<{ type: string; value: string }>;
   providers?: Array<{ provider: string; providerKey: string }>;
   jti: string;
@@ -34,7 +38,7 @@ interface JwtRefreshPayload {
   code: string;
   email: string;
   username: string;
-  tokenType: 'refresh';
+  tokenType: "refresh";
   jti: string;
 }
 
@@ -48,27 +52,30 @@ export class AuthenticationService {
   private readonly MAX_FAILED_ATTEMPTS = 5;
   private readonly DEFAULT_LOCKOUT_MINUTES = 15;
 
-  private userLoginRepository: UserLoginRepository =
-    new UserLoginRepository();
-  private userClaimRepository: UserClaimRepository =
-    new UserClaimRepository();
-  private userTokenRepository: UserTokenRepository =
-    new UserTokenRepository();
+  private userLoginRepository: UserLoginRepository = new UserLoginRepository();
+  private userClaimRepository: UserClaimRepository = new UserClaimRepository();
+  private userTokenRepository: UserTokenRepository = new UserTokenRepository();
   private userAccountRepository: UserAccountRepository =
     new UserAccountRepository();
-    
+
   constructor() {
     this.initializePassport();
   }
 
-  private getJwtSecret(): Buffer {
-    return Buffer.from(CONFIG.SYSTEM.JWT_SECRET, "utf8");
+  private getJwtSecret(type: "access" | "refresh"): Buffer {
+    return Buffer.from(
+      type === "access"
+        ? CONFIG.SYSTEM.JWT_ACCESS_SECRET
+        : CONFIG.SYSTEM.JWT_REFRESH_SECRET,
+      "utf8"
+    );
   }
 
   private initializePassport() {
     const opts: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: this.getJwtSecret(),
+      secretOrKey: this.getJwtSecret("access"),
+      passReqToCallback: true,
     };
 
     passport.use(
@@ -92,13 +99,13 @@ export class AuthenticationService {
           ],
         });
 
-        if (!user) return done(null, false, { message: "User not found" });
+        if (!user) throw new NotFoundException("User not found");
 
         if (!user.isActive)
-          return done(null, false, { message: "Account is inactive" });
+          throw new UnauthorizedException("Account is inactive");
 
         if (user.lockoutEnd && new Date(user.lockoutEnd) > new Date())
-          return done(null, false, { message: "Account is locked out" });
+          throw new UnauthorizedException("Account is locked out");
 
         const claims = await this.userClaimRepository.findAll({
           where: { userAccountCode: user.code },
@@ -142,7 +149,7 @@ export class AuthenticationService {
       this.userLoginRepository.findAll({
         where: { userAccountCode: user.code },
         transaction: options.transaction,
-      })
+      }),
     ]);
 
     const claims = claimsResult.rows || claimsResult;
@@ -152,34 +159,42 @@ export class AuthenticationService {
       code: user.code,
       email: user.email || "",
       username: user.username || "",
-      tokenType: 'access',
-      claims: Array.isArray(claims) ? claims.map((claim) => ({
-        type: claim.claimType,
-        value: claim.claimValue,
-      })) : [],
-      providers: Array.isArray(logins) ? logins.map((login) => ({
-        provider: String(login.loginProvider),
-        providerKey: login.providerKey,
-      })) : [],
-      jti: crypto.randomUUID()
+      tokenType: "access",
+      claims: Array.isArray(claims)
+        ? claims.map((claim) => ({
+            type: claim.claimType,
+            value: claim.claimValue,
+          }))
+        : [],
+      providers: Array.isArray(logins)
+        ? logins.map((login) => ({
+            provider: String(login.loginProvider),
+            providerKey: login.providerKey,
+          }))
+        : [],
+      jti: crypto.randomUUID(),
     };
 
     const refreshPayload: JwtRefreshPayload = {
       code: user.code,
       email: user.email || "",
       username: user.username || "",
-      tokenType: 'refresh',
-      jti: crypto.randomUUID()
+      tokenType: "refresh",
+      jti: crypto.randomUUID(),
     };
 
     const algorithm: Algorithm = "HS256";
 
-    const accessExpiresIn  = options.isPersistent ? "30m" : options.expiresIn || "15m";
-    const refreshExpiresIn  = options.isPersistent ? "30d" : options.expiresIn || "1d";
+    const accessExpiresIn = options.isPersistent
+      ? "30m"
+      : options.expiresIn || "15m";
+    const refreshExpiresIn = options.isPersistent
+      ? "30d"
+      : options.expiresIn || "1d";
 
     const accessToken = jwt.sign(
       accessPayload,
-      this.getJwtSecret() as Secret,
+      this.getJwtSecret("access") as Secret,
       {
         algorithm,
         expiresIn: accessExpiresIn,
@@ -188,7 +203,7 @@ export class AuthenticationService {
 
     const refreshToken = jwt.sign(
       refreshPayload,
-      this.getJwtSecret(),
+      this.getJwtSecret("refresh"),
       {
         algorithm,
         expiresIn: refreshExpiresIn,
@@ -199,7 +214,7 @@ export class AuthenticationService {
   }
 
   public verifyToken(token: string): JwtAccessPayload {
-    return jwt.verify(token, this.getJwtSecret()) as JwtAccessPayload;
+    return jwt.verify(token, this.getJwtSecret("access")) as JwtAccessPayload;
   }
 
   public async passwordSignInAsync(
