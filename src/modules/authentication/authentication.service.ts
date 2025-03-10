@@ -104,6 +104,9 @@ export class AuthenticationService {
         if (!user.isActive)
           throw new UnauthorizedException("Account is inactive");
 
+        if (!user.emailConfirmed)
+          throw new UnauthorizedException("Email not confirmed");
+
         if (user.lockoutEnd && new Date(user.lockoutEnd) > new Date())
           throw new UnauthorizedException("Account is locked out");
 
@@ -120,17 +123,25 @@ export class AuthenticationService {
           claims: claims.rows.map((claim) => ({
             type: claim.claimType,
             value: claim.claimValue,
-          })),
+          })) || [],
           providers: logins.rows.map((login) => ({
             provider: login.loginProvider,
             providerKey: login.providerKey,
             displayName: login.providerDisplayName,
-          })),
+          })) || [],
         };
 
         return done(null, userWithDetails);
       })
     );
+
+    passport.deserializeUser(async (code: string, done) => {
+      const user = await this.userAccountRepository.findOne({
+        where: { code },
+        attributes: {exclude: ["password"]},
+      })
+      done(null, user);
+    })
   }
 
   public async generateToken(
@@ -350,10 +361,6 @@ export class AuthenticationService {
       where: { code: userLogin.userAccountCode },
       attributes: { exclude: ["password"] },
     });
-  }
-
-  public authenticate() {
-    return passport.authenticate("jwt", { session: false });
   }
 
   public authorizeByClaims(

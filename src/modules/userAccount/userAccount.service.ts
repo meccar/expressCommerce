@@ -11,6 +11,7 @@ import { Transaction } from "@sequelize/core";
 import { UserAccountRepository } from "./userAccount.repository";
 import { AuthenticationService } from "@modules/authentication/authentication.service";
 import { CONFIG } from "@config/index";
+import { UserTokenRepository } from "@modules/authentication/userToken.repository";
 
 export class UserAccountService {
   private userProfileRepository: UserProfileRepository =
@@ -19,6 +20,9 @@ export class UserAccountService {
     new UserAccountRepository();
   private authenticationService: AuthenticationService =
     new AuthenticationService();
+  private userTokenRepository: UserTokenRepository =
+    new UserTokenRepository();
+
   constructor() {}
 
   @Transactional()
@@ -99,14 +103,14 @@ export class UserAccountService {
         "Either email, username or password is incorrect"
       );
 
-    const authResult = await this.authenticationService.passwordSignInAsync(
+    const signInResult = await this.authenticationService.passwordSignInAsync(
       existingUser,
       password,
       { lockoutOnFailure, requireConfirmed }
     );
 
-    if (!authResult.succeeded)
-      throw new UnauthorizedException(authResult.message);
+    if (!signInResult.succeeded)
+      throw new UnauthorizedException(signInResult.message);
 
     await this.authenticationService.signInWithClaimsAsync(
       existingUser.code,
@@ -124,6 +128,17 @@ export class UserAccountService {
   }
 
   @Transactional()
-  public async validateAccout(loginData: any, transaction?: Transaction): Promise<any> {
+  public async logout(logoutData: any, user: any, transaction?: Transaction): Promise<any> {
+    const { refreshToken } = logoutData;
+
+    if (!user) throw new UnauthorizedException();
+    if (!refreshToken) throw new UnauthorizedException();
+
+    await this.userTokenRepository.delete(
+      { userAccountCode: user.code },
+      { transaction }
+    )
+    
+    return { message: "Logged out successfully" };
   }
 }

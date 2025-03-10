@@ -1,6 +1,4 @@
-import { BaseModel } from "@common/index";
 import {
-  CreationOptional,
   DataTypes,
   InferAttributes,
   InferCreationAttributes,

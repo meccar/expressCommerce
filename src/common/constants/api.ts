@@ -6,7 +6,8 @@ export const Api = {
     },
     method :{
         register: '/register',
-        login: '/login'
+        login: '/login',
+        logout: '/logout'
     },
 } as const
 

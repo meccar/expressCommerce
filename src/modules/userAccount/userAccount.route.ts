@@ -13,14 +13,9 @@ export class UserAccountRoute extends BaseRoute {
   }
 
   private initializeRoutes(): void {
-    this.router.post(
-      `${this.basePath}${Api.method.register}`,
-      this.errorHandler(this.register)
-    );
-    this.router.post(
-      `${this.basePath}${Api.method.login}`,
-      this.errorHandler(this.login)
-    );
+    this.publicRoute('post', Api.method.register, this.register);
+    this.publicRoute('post', Api.method.login, this.login);
+    this.protectedRoute('post', Api.method.logout, this.logout);
   }
 
   /**
@@ -39,9 +34,38 @@ export class UserAccountRoute extends BaseRoute {
     res.success(result, statusCodes.CREATED);
   }
 
+  /**
+   * @swagger
+   * /user/login:
+   *   post:
+   *     summary: login users
+   *     tags: [Users]
+   *     responses:
+   *       200:
+   *         description: login user
+   */
   private async login(req: Request, res: Response): Promise<void> {
     const loginData = req.body;
     const result = await this.userAccountService.login(loginData);
+    res.success(result, statusCodes.OK);
+  }
+
+  /**
+   * @swagger
+   * /user/logout:
+   *   post:
+   *     summary: logout users
+   *     tags: [Users]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: logout user
+   */
+  private async logout(req: Request, res: Response): Promise<void> {
+    const logoutData = req.body;
+    const user = req.user;
+    const result = await this.userAccountService.logout(logoutData, user);
     res.success(result, statusCodes.OK);
   }
 }

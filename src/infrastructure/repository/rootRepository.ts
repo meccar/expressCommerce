@@ -1,4 +1,4 @@
-import { CreateOptions, DestroyOptions, FindOptions, Model, ModelStatic, UpdateOptions } from "@sequelize/core";
+import { CreateOptions, DestroyOptions, FindOptions, Model, ModelStatic, Transaction, UpdateOptions, WhereOptions } from "@sequelize/core";
 
 export class RootRepository<T extends Model> {
     constructor( 
@@ -6,23 +6,23 @@ export class RootRepository<T extends Model> {
     ) {
     };
 
-    public async findAll(options?: FindOptions<T>): Promise<{ rows: T[]; count: number }> {
+    public async findAll(options?: FindOptions<T> & { transaction?: Transaction }): Promise<{ rows: T[]; count: number }> {
         return await this.model.findAndCountAll(options);
     }
 
-    public async findById(id: number | string, options?: FindOptions<T>): Promise<T | null> {
+    public async findById(id: number | string, options?: FindOptions<T> & { transaction?: Transaction }): Promise<T | null> {
         return await this.model.findByPk(id, options);
     }
 
-    public async findOne(options?: FindOptions<T>): Promise<T | null> {
+    public async findOne(options?: FindOptions<T> & { transaction?: Transaction }): Promise<T | null> {
         return await this.model.findOne(options);
     } 
 
-    public async create(data: Partial<T>, options?: CreateOptions<T>): Promise<T> {
+    public async create(data: Partial<T>, options?: CreateOptions<T> & { transaction?: Transaction }): Promise<T> {
         return await this.model.create(data as any, options)
     }
 
-    public async update(id: number | string ,data: Partial<T>, options?: UpdateOptions<T>): Promise<[number, T[]]> {
+    public async update(id: number | string ,data: Partial<T>, options?: UpdateOptions<T> & { transaction?: Transaction }): Promise<[number, T[]]> {
         const [affectedCount, affectedRows] = await this.model.update(data as any, {
             where: {id} as any,
             ...options,
@@ -32,9 +32,9 @@ export class RootRepository<T extends Model> {
         return [affectedCount, affectedRows];
     }
 
-    public async delete(id: number | string, options?: DestroyOptions<T>): Promise<number> {
+    public async delete(where: WhereOptions<T>, options?: DestroyOptions<T> & { transaction?: Transaction }): Promise<number> {
         return await this.model.destroy({
-            where: {id} as any,
+            where,
             ...options
         })
     }
