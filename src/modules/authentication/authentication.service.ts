@@ -467,7 +467,7 @@ export class AuthenticationService {
     return { succeeded: true };
   }
 
-  private async storeToken(
+  public async storeToken(
     userAccountCode: string,
     loginProvider: string = "JWT",
     name: string,

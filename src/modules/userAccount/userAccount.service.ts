@@ -83,17 +83,7 @@ export class UserAccountService {
   private async generateVerificationToken(userAccountCode: string, transaction?: Transaction): Promise<string> {
     const ulid = factory(detectPrng(false))
     const tokenValue = ulid()
-    
-    const expirationTime = new Date();
-    expirationTime.setHours(expirationTime.getHours() + 24);
-    
-    const token = await this.userTokenRepository.create({
-      userAccountCode,
-      loginProvider: 'email_verification',
-      name: 'email_verification',
-      value: tokenValue
-    }, { transaction });
-    
+    await this.authenticationService.storeToken(userAccountCode, 'email_verification', 'email_verification', tokenValue, transaction);
     return tokenValue;
   }
 }
