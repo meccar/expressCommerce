@@ -8,14 +8,13 @@ const errorMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
-  if (error instanceof HttpException) {
+  if (error instanceof HttpException)
     return res.error(error.message, error.status);
-  }
 
   const status: number = error.status || statusCodes.INTERNAL_SERVER_ERROR;
   const message: string = error.message || messages.error.internal_server_error_500;
 
-  if (process.env.NODE_ENV === Environments.Development) {
+  if (process.env.NODE_ENV === Environments.Development) 
     logger.error({
         msg: messages.error.occurred,
         error: {
@@ -30,7 +29,7 @@ const errorMiddleware = (
             query: req.query,
         },
     });
-}
+
 
   return res.error(message, status);
 };

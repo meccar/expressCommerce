@@ -1,7 +1,6 @@
 import { mailService } from "@infrastructure/index";
 import {
   BadRequestException,
-  compare,
   encrypt,
   Transactional,
   UnauthorizedException,
@@ -120,25 +119,88 @@ export class UserAccountService {
       transaction
     );
 
-    return await this.authenticationService.generateToken(existingUser, {
+    const tokens = await this.authenticationService.generateToken(existingUser, {
       expiresIn: "1d",
       isPersistent,
       transaction,
-    });
+    })
+
+    await this.authenticationService.storeToken(
+      existingUser.code,
+      'JWT',
+      'RefreshToken',
+      tokens.refreshToken,
+      transaction
+    );
+
+    return tokens;
   }
 
   @Transactional()
   public async logout(logoutData: any, user: any, transaction?: Transaction): Promise<any> {
     const { refreshToken } = logoutData;
 
-    if (!user) throw new UnauthorizedException();
-    if (!refreshToken) throw new UnauthorizedException();
+    if (!user || !refreshToken) throw new UnauthorizedException();
 
+    const decoded = this.authenticationService.verifyRefreshToken(refreshToken);
+
+    const storedToken = await this.authenticationService.findToken(
+        decoded.code,
+        'JWT',
+        'RefreshToken',
+        refreshToken
+      )
+    
+    if (!storedToken || !user) throw new UnauthorizedException();
+    
     await this.userTokenRepository.delete(
       { userAccountCode: user.code },
       { transaction }
     )
     
     return { message: "Logged out successfully" };
+  }
+
+  @Transactional()
+  public async refreshToken(refreshTokenData: any, transaction?: Transaction): Promise<any> {
+    const {refreshToken} = refreshTokenData;
+
+    if (!refreshToken) throw new UnauthorizedException();
+
+    const decoded = this.authenticationService.verifyRefreshToken(refreshToken);
+
+    const [storedToken, user] = await Promise.all([
+      this.authenticationService.findToken(
+        decoded.code,
+        'JWT',
+        'RefreshToken',
+        refreshToken
+      ),
+      this.userAccountRepository.findOne({
+        where: { code: decoded.code }
+      })
+    ]);
+    
+    if (!storedToken || !user) throw new UnauthorizedException();
+    
+    const tokens = await this.authenticationService.generateToken(user, {
+      isPersistent: true,
+      transaction
+    });
+
+    await this.authenticationService.invalidateToken(refreshToken, transaction);
+
+    await this.authenticationService.storeToken(
+      user.code,
+      'JWT',
+      'RefreshToken',
+      tokens.refreshToken,
+      transaction
+    );
+
+    return ({
+      tokens,
+      expiresIn: 1800,
+    });
   }
 }

@@ -224,8 +224,38 @@ export class AuthenticationService {
     return { accessToken, refreshToken };
   }
 
-  public verifyToken(token: string): JwtAccessPayload {
+  public async findToken(
+    userAccountCode: string,
+    loginProvider: string = "JWT",
+    name: string,
+    value: string
+  ): Promise<UserToken | null> {
+    return this.userTokenRepository.findOne({
+      where: {
+        userAccountCode,
+        loginProvider,
+        name,
+        value,
+      },
+    });
+  }
+
+  public async invalidateToken(
+    token: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    await this.userTokenRepository.delete(
+      { value: token },
+      { transaction }
+    );
+  }
+
+  public verifyAccessToken(token: string): JwtAccessPayload {
     return jwt.verify(token, this.getJwtSecret("access")) as JwtAccessPayload;
+  }
+
+  public verifyRefreshToken(token: string): JwtRefreshPayload {
+    return jwt.verify(token, this.getJwtSecret("refresh")) as JwtRefreshPayload;
   }
 
   public async passwordSignInAsync(
