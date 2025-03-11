@@ -7,8 +7,10 @@ import {
 import * as jwt from "jsonwebtoken";
 import { CONFIG } from "@config/index";
 import {
+  BadRequestException,
   compare,
   NotFoundException,
+  Transactional,
   UnauthorizedException,
 } from "@common/index";
 import { Transaction } from "@sequelize/core";
@@ -18,35 +20,11 @@ import { UserLogin } from "./userLogin.model";
 import { UserToken } from "./userToken.model";
 import { Secret, SignOptions } from "jsonwebtoken";
 import type { Algorithm } from "jsonwebtoken";
-import { SignInResult } from "@infrastructure/index";
+import { JwtAccessPayload, JwtRefreshPayload, SignInOptions, SignInResult } from "@infrastructure/index";
 import { UserLoginRepository } from "./userLogin.repository";
 import { UserClaimRepository } from "./userClaim.repository";
 import { UserTokenRepository } from "./userToken.repository";
 import crypto from "crypto";
-
-interface JwtAccessPayload {
-  code: string;
-  email: string;
-  username: string;
-  tokenType: "access";
-  claims?: Array<{ type: string; value: string }>;
-  providers?: Array<{ provider: string; providerKey: string }>;
-  jti: string;
-}
-
-interface JwtRefreshPayload {
-  code: string;
-  email: string;
-  username: string;
-  tokenType: "refresh";
-  jti: string;
-}
-
-export interface SignInOptions {
-  isPersistent?: boolean;
-  lockoutOnFailure?: boolean;
-  requireConfirmed?: boolean;
-}
 
 export class AuthenticationService {
   private readonly MAX_FAILED_ATTEMPTS = 5;
@@ -55,8 +33,7 @@ export class AuthenticationService {
   private userLoginRepository: UserLoginRepository = new UserLoginRepository();
   private userClaimRepository: UserClaimRepository = new UserClaimRepository();
   private userTokenRepository: UserTokenRepository = new UserTokenRepository();
-  private userAccountRepository: UserAccountRepository =
-    new UserAccountRepository();
+  private userAccountRepository: UserAccountRepository = new UserAccountRepository();
 
   constructor() {
     this.initializePassport();
@@ -144,7 +121,176 @@ export class AuthenticationService {
     })
   }
 
-  public async generateToken(
+  @Transactional()
+  public async login(loginData: any, transaction?: Transaction): Promise<any> {
+    const {
+      email,
+      username,
+      password,
+      isPersistent,
+      lockoutOnFailure,
+      requireConfirmed,
+    } = loginData;
+
+    if (!((email || username) && password))
+      throw new BadRequestException(
+        "Please enter email, username and password"
+      );
+
+    const existingUser = await this.userAccountRepository.findByEmailOrUsername(
+      email,
+      username
+    );
+
+    if (!existingUser)
+      throw new UnauthorizedException(
+        "Either email, username or password is incorrect"
+      );
+
+    const signInResult = await this.passwordSignInAsync(
+      existingUser,
+      password,
+      { lockoutOnFailure, requireConfirmed }
+    );
+
+    if (!signInResult.succeeded)
+      throw new UnauthorizedException(signInResult.message);
+
+    await this.signInWithClaimsAsync(
+      existingUser.code,
+      existingUser.email,
+      existingUser.email,
+      "Local",
+      transaction
+    );
+
+    const tokens = await this.generateToken(existingUser, {
+      expiresIn: "1d",
+      isPersistent,
+      transaction,
+    })
+
+    await this.storeToken(
+      existingUser.code,
+      'JWT',
+      'RefreshToken',
+      tokens.refreshToken,
+      transaction
+    );
+
+    return tokens;
+  }
+
+  @Transactional()
+  public async logout(logoutData: any, user: any, transaction?: Transaction): Promise<any> {
+    const { refreshToken } = logoutData;
+
+    if (!user || !refreshToken) throw new UnauthorizedException();
+
+    const decoded = this.verifyRefreshToken(refreshToken);
+
+    const storedToken = await this.findToken(
+        decoded.code,
+        'JWT',
+        'RefreshToken',
+        refreshToken
+      )
+    
+    if (!storedToken || !user) throw new UnauthorizedException();
+    
+    await this.userTokenRepository.delete(
+      { userAccountCode: user.code },
+      { transaction }
+    )
+    
+    return { message: "Logged out successfully" };
+  }
+
+  @Transactional()
+  public async confirmEmail(confirmEmailData: any, transaction?: Transaction): Promise<any> {
+    const { token } = confirmEmailData;
+    if (!token) throw new UnauthorizedException();
+
+    const userToken = await this.userTokenRepository.findOne({
+      where: {
+        loginProvider: 'email_verification',
+        name: 'email_verification',
+        value: token
+      }
+    });
+
+    if (!userToken) 
+      throw new UnauthorizedException("Invalid or expired verification token");
+    
+    const userAccount = await this.userAccountRepository.findOne({
+      where: {
+        code: userToken.userAccountCode
+      }});
+
+    if (!userAccount) throw new BadRequestException();
+    
+  
+    await this.userAccountRepository.update(
+      userAccount.code,
+      {
+        isActive: true,
+        emailConfirmed: true,
+      },
+      { transaction }
+    );
+  
+    await this.userTokenRepository.delete(
+      { value: token },
+      {transaction}
+    );
+  
+    return { message: "Email verified successfully" };
+  }
+
+  @Transactional()
+  public async refreshToken(refreshTokenData: any, transaction?: Transaction): Promise<any> {
+    const {refreshToken} = refreshTokenData;
+
+    if (!refreshToken) throw new UnauthorizedException();
+
+    const decoded = this.verifyRefreshToken(refreshToken);
+
+    const [storedToken, user] = await Promise.all([
+      this.findToken(
+        decoded.code,
+        'JWT',
+        'RefreshToken',
+        refreshToken
+      ),
+      this.userAccountRepository.findOne({
+        where: { code: decoded.code }
+      })
+    ]);
+    
+    if (!storedToken || !user) throw new UnauthorizedException();
+    
+    const tokens = await this.generateToken(user, {
+      isPersistent: true,
+      transaction
+    });
+
+    await this.invalidateToken(refreshToken, transaction);
+
+    await this.storeToken(
+      user.code,
+      'JWT',
+      'RefreshToken',
+      tokens.refreshToken,
+      transaction
+    );
+
+    return ({
+      tokens,
+      expiresIn: 1800,
+    });
+  }
+
+  private async generateToken(
     user: UserAccount,
     options: {
       expiresIn?: string;
@@ -224,7 +370,7 @@ export class AuthenticationService {
     return { accessToken, refreshToken };
   }
 
-  public async findToken(
+  private async findToken(
     userAccountCode: string,
     loginProvider: string = "JWT",
     name: string,
@@ -240,7 +386,7 @@ export class AuthenticationService {
     });
   }
 
-  public async invalidateToken(
+  private async invalidateToken(
     token: string,
     transaction?: Transaction
   ): Promise<void> {
@@ -250,15 +396,15 @@ export class AuthenticationService {
     );
   }
 
-  public verifyAccessToken(token: string): JwtAccessPayload {
+  private verifyAccessToken(token: string): JwtAccessPayload {
     return jwt.verify(token, this.getJwtSecret("access")) as JwtAccessPayload;
   }
 
-  public verifyRefreshToken(token: string): JwtRefreshPayload {
+  private verifyRefreshToken(token: string): JwtRefreshPayload {
     return jwt.verify(token, this.getJwtSecret("refresh")) as JwtRefreshPayload;
   }
 
-  public async passwordSignInAsync(
+  private async passwordSignInAsync(
     user: UserAccount,
     password: string,
     options: SignInOptions = {}
@@ -321,7 +467,7 @@ export class AuthenticationService {
     return { succeeded: true };
   }
 
-  public async storeToken(
+  private async storeToken(
     userAccountCode: string,
     loginProvider: string = "JWT",
     name: string,
@@ -339,7 +485,7 @@ export class AuthenticationService {
     );
   }
 
-  public async storeClaim(
+  private async storeClaim(
     userAccountCode: string,
     claimType: string,
     claimValue: string,
@@ -355,7 +501,7 @@ export class AuthenticationService {
     );
   }
 
-  public async signInWithClaimsAsync(
+  private async signInWithClaimsAsync(
     userAccountCode: string,
     loginProvider: string,
     providerKey: string,
@@ -373,7 +519,7 @@ export class AuthenticationService {
     );
   }
 
-  public async validateExternalProviderToken(
+  private async validateExternalProviderToken(
     loginProvider: string,
     providerKey: string
   ): Promise<UserAccount | null> {
@@ -393,7 +539,7 @@ export class AuthenticationService {
     });
   }
 
-  public authorizeByClaims(
+  private authorizeByClaims(
     requiredClaims: Array<{ type: string; value?: string }>
   ) {
     return async (req: any, res: any, next: any) => {
@@ -425,7 +571,7 @@ export class AuthenticationService {
     };
   }
 
-  public generateConcurrencyStampAsync() {
+  private generateConcurrencyStampAsync() {
     return crypto.randomUUID();
   }
 }

@@ -11,6 +11,7 @@ import { UserAccountRepository } from "./userAccount.repository";
 import { AuthenticationService } from "@modules/authentication/authentication.service";
 import { CONFIG } from "@config/index";
 import { UserTokenRepository } from "@modules/authentication/userToken.repository";
+import { factory, detectPrng } from 'ulid'
 
 export class UserAccountService {
   private userProfileRepository: UserProfileRepository =
@@ -67,8 +68,11 @@ export class UserAccountService {
       { userAccountCode: userAccount.code },
       { transaction }
   );
-
-    await mailService.send(email, "Welcome to our platform!", "welcome", { username });
+  
+  const verificationToken = await this.generateVerificationToken(userAccount.code, transaction);
+  const verificationUrl = `${CONFIG.SYSTEM.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+  
+  await mailService.send(email, "Welcome to our platform!", "email-verification", { username: username ?? email, verificationUrl  });
 
     return {
       user: userAccount.toJSON(),
@@ -76,131 +80,20 @@ export class UserAccountService {
     };
   }
 
-  @Transactional()
-  public async login(loginData: any, transaction?: Transaction): Promise<any> {
-    const {
-      email,
-      username,
-      password,
-      isPersistent,
-      lockoutOnFailure,
-      requireConfirmed,
-    } = loginData;
-
-    if (!((email || username) && password))
-      throw new BadRequestException(
-        "Please enter email, username and password"
-      );
-
-    const existingUser = await this.userAccountRepository.findByEmailOrUsername(
-      email,
-      username
-    );
-
-    if (!existingUser)
-      throw new UnauthorizedException(
-        "Either email, username or password is incorrect"
-      );
-
-    const signInResult = await this.authenticationService.passwordSignInAsync(
-      existingUser,
-      password,
-      { lockoutOnFailure, requireConfirmed }
-    );
-
-    if (!signInResult.succeeded)
-      throw new UnauthorizedException(signInResult.message);
-
-    await this.authenticationService.signInWithClaimsAsync(
-      existingUser.code,
-      existingUser.email,
-      existingUser.email,
-      "Local",
-      transaction
-    );
-
-    const tokens = await this.authenticationService.generateToken(existingUser, {
-      expiresIn: "1d",
-      isPersistent,
-      transaction,
-    })
-
-    await this.authenticationService.storeToken(
-      existingUser.code,
-      'JWT',
-      'RefreshToken',
-      tokens.refreshToken,
-      transaction
-    );
-
-    return tokens;
-  }
-
-  @Transactional()
-  public async logout(logoutData: any, user: any, transaction?: Transaction): Promise<any> {
-    const { refreshToken } = logoutData;
-
-    if (!user || !refreshToken) throw new UnauthorizedException();
-
-    const decoded = this.authenticationService.verifyRefreshToken(refreshToken);
-
-    const storedToken = await this.authenticationService.findToken(
-        decoded.code,
-        'JWT',
-        'RefreshToken',
-        refreshToken
-      )
+  private async generateVerificationToken(userAccountCode: string, transaction?: Transaction): Promise<string> {
+    const ulid = factory(detectPrng(false))
+    const tokenValue = ulid()
     
-    if (!storedToken || !user) throw new UnauthorizedException();
+    const expirationTime = new Date();
+    expirationTime.setHours(expirationTime.getHours() + 24);
     
-    await this.userTokenRepository.delete(
-      { userAccountCode: user.code },
-      { transaction }
-    )
+    const token = await this.userTokenRepository.create({
+      userAccountCode,
+      loginProvider: 'email_verification',
+      name: 'email_verification',
+      value: tokenValue
+    }, { transaction });
     
-    return { message: "Logged out successfully" };
-  }
-
-  @Transactional()
-  public async refreshToken(refreshTokenData: any, transaction?: Transaction): Promise<any> {
-    const {refreshToken} = refreshTokenData;
-
-    if (!refreshToken) throw new UnauthorizedException();
-
-    const decoded = this.authenticationService.verifyRefreshToken(refreshToken);
-
-    const [storedToken, user] = await Promise.all([
-      this.authenticationService.findToken(
-        decoded.code,
-        'JWT',
-        'RefreshToken',
-        refreshToken
-      ),
-      this.userAccountRepository.findOne({
-        where: { code: decoded.code }
-      })
-    ]);
-    
-    if (!storedToken || !user) throw new UnauthorizedException();
-    
-    const tokens = await this.authenticationService.generateToken(user, {
-      isPersistent: true,
-      transaction
-    });
-
-    await this.authenticationService.invalidateToken(refreshToken, transaction);
-
-    await this.authenticationService.storeToken(
-      user.code,
-      'JWT',
-      'RefreshToken',
-      tokens.refreshToken,
-      transaction
-    );
-
-    return ({
-      tokens,
-      expiresIn: 1800,
-    });
+    return tokenValue;
   }
 }

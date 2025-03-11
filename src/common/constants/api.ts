@@ -2,12 +2,15 @@ export const Api = {
     apiRoot: 'api',
     service: {
         userAccount: "/user",
-        admin: "/admin"
+        auth: "/auth",
+        admin: "/admin",
     },
     method :{
         register: '/register',
         login: '/login',
-        logout: '/logout'
+        logout: '/logout',
+        refreshToken: "/refresh",
+        confirmEmail: "/confirm",
     },
 } as const
 

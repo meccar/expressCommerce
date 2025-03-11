@@ -10,8 +10,8 @@ export class RootRepository<T extends Model> {
         return await this.model.findAndCountAll(options);
     }
 
-    public async findById(id: number | string, options?: FindOptions<T> & { transaction?: Transaction }): Promise<T | null> {
-        return await this.model.findByPk(id, options);
+    public async findByCode(code: number | string, options?: FindOptions<T> & { transaction?: Transaction }): Promise<T | null> {
+        return await this.model.findByPk(code, options);
     }
 
     public async findOne(options?: FindOptions<T> & { transaction?: Transaction }): Promise<T | null> {
@@ -22,9 +22,9 @@ export class RootRepository<T extends Model> {
         return await this.model.create(data as any, options)
     }
 
-    public async update(id: number | string ,data: Partial<T>, options?: UpdateOptions<T> & { transaction?: Transaction }): Promise<[number, T[]]> {
+    public async update(code: number | string, data: Partial<T>, options?: Omit<UpdateOptions<T>, "where"> & { transaction?: Transaction }): Promise<[number, T[]]> {
         const [affectedCount, affectedRows] = await this.model.update(data as any, {
-            where: {id} as any,
+            where: {code} as any,
             ...options,
             returning: true
         });
@@ -32,7 +32,7 @@ export class RootRepository<T extends Model> {
         return [affectedCount, affectedRows];
     }
 
-    public async delete(where: WhereOptions<T>, options?: DestroyOptions<T> & { transaction?: Transaction }): Promise<number> {
+    public async delete(where: WhereOptions<T>, options?: Omit<DestroyOptions<T>, "where"> & { transaction?: Transaction }): Promise<number> {
         return await this.model.destroy({
             where,
             ...options
