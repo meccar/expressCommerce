@@ -8,7 +8,6 @@ import {
 import {
   Attribute,
   AutoIncrement,
-  Index,
   NotNull,
   PrimaryKey,
   Table,

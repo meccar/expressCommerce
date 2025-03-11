@@ -5,7 +5,6 @@ import {
   InferAttributes,
   InferCreationAttributes,
   Model,
-  Op,
   sql,
 } from "@sequelize/core";
 import {

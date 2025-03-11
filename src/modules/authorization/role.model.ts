@@ -4,9 +4,8 @@ import {
   DataTypes,
   InferAttributes,
   InferCreationAttributes,
-  Model,
 } from "@sequelize/core";
-import { Attribute, AutoIncrement, Index, NotNull, PrimaryKey, Table } from "@sequelize/core/decorators-legacy";
+import { Attribute, NotNull, Table } from "@sequelize/core/decorators-legacy";
 
 @Table({
   tableName: "Role",

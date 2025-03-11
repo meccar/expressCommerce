@@ -3,25 +3,18 @@ import {
   BadRequestException,
   encrypt,
   Transactional,
-  UnauthorizedException,
 } from "@common/index";
 import { UserProfileRepository } from "@modules/userProfile";
 import { Transaction } from "@sequelize/core";
 import { UserAccountRepository } from "./userAccount.repository";
 import { AuthenticationService } from "@modules/authentication/authentication.service";
 import { CONFIG } from "@config/index";
-import { UserTokenRepository } from "@modules/authentication/userToken.repository";
 import { factory, detectPrng } from 'ulid'
 
 export class UserAccountService {
-  private userProfileRepository: UserProfileRepository =
-    new UserProfileRepository();
-  private userAccountRepository: UserAccountRepository =
-    new UserAccountRepository();
-  private authenticationService: AuthenticationService =
-    new AuthenticationService();
-  private userTokenRepository: UserTokenRepository =
-    new UserTokenRepository();
+  private userProfileRepository: UserProfileRepository = new UserProfileRepository();
+  private userAccountRepository: UserAccountRepository = new UserAccountRepository();
+  private authenticationService: AuthenticationService = new AuthenticationService();
 
   constructor() {}
 

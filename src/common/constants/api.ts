@@ -11,6 +11,7 @@ export const Api = {
         logout: '/logout',
         refreshToken: "/refresh",
         confirmEmail: "/confirm",
+        rotateKeys: "/rotate-keys",
     },
 } as const
 

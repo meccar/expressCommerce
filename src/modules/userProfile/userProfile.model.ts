@@ -1,4 +1,4 @@
-import { BaseModel, FieldNames, Gender, IndexNames, TableNames } from "@common/index";
+import { BaseModel, Gender, TableNames } from "@common/index";
 import {
   DataTypes,
   InferAttributes,
