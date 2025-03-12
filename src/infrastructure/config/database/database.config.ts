@@ -3,6 +3,7 @@ import { MySqlDialect } from "@sequelize/mysql";
 import { Role, RoleClaim, UserAccount, UserClaim, UserLogin, UserProfile, UserRole, UserToken } from "@modules/index";
 import { Environments } from "@common/index";
 import { CONFIG } from "@config/index";
+import { logger } from "@infrastructure/index";
 
 const models = [
   UserClaim,
@@ -36,12 +37,12 @@ export const dbConfig: Options<MySqlDialect> = {
   },
   charset: "utf8mb4",
   timezone: "+07:00",
-  // logging:
-  //   process.env.NODE_ENV !== "production"
-  //     ? (((sql: string, timing?: number) => {
-  //         logger.info(`${sql} ${timing ? `[${timing}ms]` : ""}`);
-  //       }) as LoggingFunction)
-  //     : false,
+  logging:
+    process.env.NODE_ENV !== "production"
+      ? (((sql: string, timing?: number) => {
+          logger.info(`${sql} ${timing ? `[${timing}ms]` : ""}`);
+        }) as LoggingFunction)
+      : false,
   models: models,
   define: {
     timestamps: true,

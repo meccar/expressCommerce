@@ -4,30 +4,23 @@ import {
   ExtractJwt,
   StrategyOptions,
 } from "passport-jwt";
-import * as jwt from "jsonwebtoken";
 import { CONFIG } from "@config/index";
 import {
   BadRequestException,
   compare,
-  messages,
   NotFoundException,
   Transactional,
   UnauthorizedException,
 } from "@common/index";
 import { Transaction } from "@sequelize/core";
-import { UserAccount, UserAccountRepository } from "@modules/userAccount";
-import { UserClaim } from "./userClaim.model";
+import { UserAccount, UserAccountRepository, UserAccountService } from "@modules/userAccount";
 import { UserLogin } from "./userLogin.model";
-import { UserToken } from "./userToken.model";
-import { Secret, SignOptions } from "jsonwebtoken";
-import type { Algorithm } from "jsonwebtoken";
-import { JwtAccessPayload, JwtRefreshPayload, SignInOptions, SignInResult } from "@infrastructure/index";
+import { JwtAccessPayload,SignInOptions, SignInResult } from "@infrastructure/index";
 import { UserLoginRepository } from "./userLogin.repository";
-import { UserClaimRepository } from "./userClaim.repository";
-import { UserTokenRepository } from "./userToken.repository";
 import crypto from "crypto";
-import speakeasy from 'speakeasy';
-import QRCode from 'qrcode';
+import { TokenService } from "@modules/tokens/tokens.service";
+import { MfaService } from "@modules/mfa/mfa.service";
+import { UserClaim, UserClaimRepository } from "@modules/claims";
 
 export class AuthenticationService {
   private readonly MAX_FAILED_ATTEMPTS = 5;
@@ -35,26 +28,19 @@ export class AuthenticationService {
 
   private userLoginRepository: UserLoginRepository = new UserLoginRepository();
   private userClaimRepository: UserClaimRepository = new UserClaimRepository();
-  private userTokenRepository: UserTokenRepository = new UserTokenRepository();
   private userAccountRepository: UserAccountRepository = new UserAccountRepository();
+  private tokenService: TokenService = new TokenService();
+  private mfaService: MfaService = new MfaService();
+  private userAccountService: UserAccountService = new UserAccountService();
 
   constructor() {
     this.initializePassport();
   }
 
-  private getJwtSecret(type: "access" | "refresh"): Buffer {
-    return Buffer.from(
-      type === "access"
-        ? CONFIG.SYSTEM.JWT_ACCESS_SECRET
-        : CONFIG.SYSTEM.JWT_REFRESH_SECRET,
-      "utf8"
-    );
-  }
-
   private initializePassport() {
     const opts: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: this.getJwtSecret("access"),
+      secretOrKey: this.tokenService.getJwtSecret("access"),
       passReqToCallback: true,
     };
 
@@ -167,16 +153,14 @@ export class AuthenticationService {
       transaction
     );
 
-    const tokens = await this.generateToken(existingUser, {
-      expiresIn: "1d",
+    const tokens = await this.tokenService.generateTokenPair(existingUser, {
+      expiresIn: isPersistent ? "1d" : "15m",
       isPersistent,
       transaction,
     })
 
-    await this.storeToken(
+    await this.tokenService.storeRefreshToken(
       existingUser.code,
-      'JWT',
-      'RefreshToken',
       tokens.refreshToken,
       transaction
     );
@@ -190,21 +174,18 @@ export class AuthenticationService {
 
     if (!user || !refreshToken) throw new UnauthorizedException();
 
-    const decoded = this.verifyRefreshToken(refreshToken);
+    const decoded = this.tokenService.verifyRefreshToken(refreshToken);
 
-    const storedToken = await this.findToken(
+    if (decoded.code !== user.code) throw new UnauthorizedException();
+
+    const storedToken = await this.tokenService.findToken(
         decoded.code,
         'JWT',
         'RefreshToken',
         refreshToken
       )
     
-    if (!storedToken || !user) throw new UnauthorizedException();
-    
-    await this.userTokenRepository.delete(
-      { userAccountCode: user.code },
-      { transaction }
-    )
+    if (!storedToken) throw new UnauthorizedException();
     
     return { message: "Logged out successfully" };
   }
@@ -214,38 +195,7 @@ export class AuthenticationService {
     const { token } = confirmEmailData;
     if (!token) throw new UnauthorizedException();
 
-    const userToken = await this.userTokenRepository.findOne({
-      where: {
-        loginProvider: 'email_verification',
-        name: 'email_verification',
-        value: token
-      }
-    });
-
-    if (!userToken) 
-      throw new UnauthorizedException("Invalid or expired verification token");
-    
-    const userAccount = await this.userAccountRepository.findOne({
-      where: {
-        code: userToken.userAccountCode
-      }});
-
-    if (!userAccount) throw new BadRequestException();
-    
-  
-    await this.userAccountRepository.update(
-      userAccount.code,
-      {
-        isActive: true,
-        emailConfirmed: true,
-      },
-      { transaction }
-    );
-  
-    await this.userTokenRepository.delete(
-      { value: token },
-      {transaction}
-    );
+    await this.userAccountService.confirmEmail(token, transaction);
   
     return { message: "Email verified successfully" };
   }
@@ -256,234 +206,31 @@ export class AuthenticationService {
 
     if (!refreshToken) throw new UnauthorizedException();
 
-    const decoded = this.verifyRefreshToken(refreshToken);
-
-    const [storedToken, user] = await Promise.all([
-      this.findToken(
-        decoded.code,
-        'JWT',
-        'RefreshToken',
-        refreshToken
-      ),
-      this.userAccountRepository.findOne({
-        where: { code: decoded.code }
-      })
-    ]);
-    
-    if (!storedToken || !user) throw new UnauthorizedException();
-    
-    const tokens = await this.generateToken(user, {
-      isPersistent: true,
-      transaction
-    });
-
-    await this.invalidateToken(refreshToken, transaction);
-
-    await this.storeToken(
-      user.code,
-      'JWT',
-      'RefreshToken',
-      tokens.refreshToken,
-      transaction
+    const { user, newTokens } = await this.tokenService.refreshTokenPair(
+      refreshToken,
+      { transaction }
     );
 
     return ({
-      tokens,
+      tokens: newTokens,
       expiresIn: 1800,
     });
   }
 
-  @Transactional()
-  public async generateTwoFactorSecret(user: any, transactional?: Transaction): Promise<any> {
-    if (!user) throw new UnauthorizedException();
-    if (user.twoFactorEnabled) throw new BadRequestException();
-
-    const secret = speakeasy.generateSecret({
-      name: `${CONFIG.SYSTEM.APP_NAME}:${user.code}`,
-      length: 20
-    });
-
-    user.twoFactorSecret = secret.base32;
-    await user.save();
-
-    QRCode.toDataURL(secret.otpauth_url || '', (_, dataUrl) => {
-      return { otpauth_url: secret.otpauth_url, qrCode: dataUrl }
-    });
-    // return { otpauth_url: secret.otpauth_url, qrCode: dataUrl }
+  public async generateTwoFactorSecret(user: any, transaction?: Transaction): Promise<any> {
+    return this.mfaService.generateSecret(user, transaction);
   }
 
-  @Transactional()
-  public async verifyTwoFactorSecret(twoFactorSecretData: any, user: any, transactional?: Transaction): Promise<any> {
-    const {token} = twoFactorSecretData
-    if (!user || !token) throw new UnauthorizedException();
-    if (!user.twoFactorEnabled) throw new BadRequestException();
-
-    const verified = speakeasy.totp.verify({
-      secret: user.twoFactorSecret,
-      encoding: 'base32',
-      token: token,
-    });
-
-    if (!verified) throw new UnauthorizedException();
-    user.isTwoFactorVerified = true;
-    user.twoFactorEnabled = true;
-    await user.save();
-    
-    return { message: '2FA is verified' }
+  public async verifyTwoFactorSecret(data: any, user: any, transaction?: Transaction): Promise<any> {
+    return this.mfaService.verifySecret(data, user, transaction);
   }
 
-  @Transactional()
-  public async validateTwoFactorSecret(twoFactorSecretData: any, user: any, transactional?: Transaction): Promise<any> {
-    const {token} = twoFactorSecretData
-    if (!user || !token) throw new UnauthorizedException();
-    if (!user.twoFactorEnabled || !user.isTwoFactorVerified) throw new BadRequestException();
-
-    const verified = speakeasy.totp.verify({
-      secret: user.twoFactorSecret,
-      encoding: 'base32',
-      token: token,
-      window: 1
-    });
-
-    if (!verified) throw new UnauthorizedException();
-
-    return { message: '2FA is valid' }
+  public async validateTwoFactorSecret(data: any, user: any, transaction?: Transaction): Promise<any> {
+    return this.mfaService.validateToken(data, user, transaction);
   }
 
-  @Transactional()
-  public async disableTwoFactorSecret(twoFactorSecretData: any, user: any, transactional?: Transaction): Promise<any> {
-    const {token} = twoFactorSecretData
-    if (!user || !token) throw new UnauthorizedException();
-    if (!user.twoFactorEnabled || !user.isTwoFactorVerified) throw new BadRequestException();
-
-    const verified = speakeasy.totp.verify({
-      secret: user.twoFactorSecret,
-      encoding: 'base32',
-      token: token,
-      window: 1
-    });
-
-    if (!verified) throw new UnauthorizedException();
-    user.twoFactorEnabled = false;
-    user.isTwoFactorVerified = false;
-    user.twoFactorSecret = '';
-    await user.save();
-    
-    return { message: '2FA disabled successfully' }
-  }
-
-  private async generateToken(
-    user: UserAccount,
-    options: {
-      expiresIn?: string;
-      isPersistent?: boolean;
-      transaction?: Transaction;
-    } = {}
-  ): Promise<{ accessToken: string; refreshToken: string }> {
-    const [claimsResult, loginsResult] = await Promise.all([
-      this.userClaimRepository.findAll({
-        where: { userAccountCode: user.code },
-        transaction: options.transaction,
-      }),
-      this.userLoginRepository.findAll({
-        where: { userAccountCode: user.code },
-        transaction: options.transaction,
-      }),
-    ]);
-
-    const claims = claimsResult.rows || claimsResult;
-    const logins = loginsResult.rows || loginsResult;
-
-    const accessPayload: JwtAccessPayload = {
-      code: user.code,
-      email: user.email || "",
-      username: user.username || "",
-      tokenType: "access",
-      claims: Array.isArray(claims)
-        ? claims.map((claim) => ({
-            type: claim.claimType,
-            value: claim.claimValue,
-          }))
-        : [],
-      providers: Array.isArray(logins)
-        ? logins.map((login) => ({
-            provider: String(login.loginProvider),
-            providerKey: login.providerKey,
-          }))
-        : [],
-      jti: crypto.randomUUID(),
-    };
-
-    const refreshPayload: JwtRefreshPayload = {
-      code: user.code,
-      email: user.email || "",
-      username: user.username || "",
-      tokenType: "refresh",
-      jti: crypto.randomUUID(),
-    };
-
-    const algorithm: Algorithm = "HS256";
-
-    const accessExpiresIn = options.isPersistent
-      ? "30m"
-      : options.expiresIn || "15m";
-    const refreshExpiresIn = options.isPersistent
-      ? "30d"
-      : options.expiresIn || "1d";
-
-    const accessToken = jwt.sign(
-      accessPayload,
-      this.getJwtSecret("access") as Secret,
-      {
-        algorithm,
-        expiresIn: accessExpiresIn,
-      } as SignOptions
-    );
-
-    const refreshToken = jwt.sign(
-      refreshPayload,
-      this.getJwtSecret("refresh"),
-      {
-        algorithm,
-        expiresIn: refreshExpiresIn,
-      } as SignOptions
-    );
-
-    return { accessToken, refreshToken };
-  }
-
-  private async findToken(
-    userAccountCode: string,
-    loginProvider: string = "JWT",
-    name: string,
-    value: string
-  ): Promise<UserToken | null> {
-    return this.userTokenRepository.findOne({
-      where: {
-        userAccountCode,
-        loginProvider,
-        name,
-        value,
-      },
-    });
-  }
-
-  private async invalidateToken(
-    token: string,
-    transaction?: Transaction
-  ): Promise<void> {
-    await this.userTokenRepository.delete(
-      { value: token },
-      { transaction }
-    );
-  }
-
-  private verifyAccessToken(token: string): JwtAccessPayload {
-    return jwt.verify(token, this.getJwtSecret("access")) as JwtAccessPayload;
-  }
-
-  private verifyRefreshToken(token: string): JwtRefreshPayload {
-    return jwt.verify(token, this.getJwtSecret("refresh")) as JwtRefreshPayload;
+  public async disableTwoFactorSecret(data: any, user: any, transaction?: Transaction): Promise<any> {
+    return this.mfaService.disableSecret(data, user, transaction);
   }
 
   private async passwordSignInAsync(
@@ -547,40 +294,6 @@ export class AuthenticationService {
 
     await user.save();
     return { succeeded: true };
-  }
-
-  public async storeToken(
-    userAccountCode: string,
-    loginProvider: string = "JWT",
-    name: string,
-    value: string,
-    transaction?: Transaction
-  ): Promise<UserToken> {
-    return this.userTokenRepository.create(
-      {
-        userAccountCode,
-        loginProvider,
-        name,
-        value,
-      },
-      { transaction }
-    );
-  }
-
-  private async storeClaim(
-    userAccountCode: string,
-    claimType: string,
-    claimValue: string,
-    transaction?: Transaction
-  ): Promise<UserClaim> {
-    return this.userClaimRepository.create(
-      {
-        userAccountCode,
-        claimType,
-        claimValue,
-      },
-      { transaction }
-    );
   }
 
   private async signInWithClaimsAsync(

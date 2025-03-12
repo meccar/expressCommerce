@@ -3,18 +3,21 @@ import {
   BadRequestException,
   encrypt,
   Transactional,
+  UnauthorizedException,
 } from "@common/index";
 import { UserProfileRepository } from "@modules/userProfile";
 import { Transaction } from "@sequelize/core";
 import { UserAccountRepository } from "./userAccount.repository";
-import { AuthenticationService } from "@modules/authentication/authentication.service";
 import { CONFIG } from "@config/index";
 import { factory, detectPrng } from 'ulid'
+import { UserTokenRepository } from "@modules/tokens/userToken.repository";
+import { TokenService } from "@modules/tokens/tokens.service";
 
 export class UserAccountService {
   private userProfileRepository: UserProfileRepository = new UserProfileRepository();
   private userAccountRepository: UserAccountRepository = new UserAccountRepository();
-  private authenticationService: AuthenticationService = new AuthenticationService();
+  private userTokenRepository: UserTokenRepository = new UserTokenRepository();
+  private tokenService: TokenService = new TokenService();
 
   constructor() {}
 
@@ -72,10 +75,48 @@ export class UserAccountService {
     };
   }
 
+  @Transactional()
+  public async confirmEmail(
+    token: string,
+    transaction?: Transaction
+  ): Promise<void> {
+    const userToken = await this.userTokenRepository.findOne({
+      where: {
+        loginProvider: 'email_verification',
+        name: 'email_verification',
+        value: token
+      }
+    });
+
+    if (!userToken) throw new UnauthorizedException("Invalid or expired verification token");
+    
+    
+    const userAccount = await this.userAccountRepository.findOne({
+      where: { code: userToken.userAccountCode }
+    });
+
+    if (!userAccount) throw new BadRequestException("User account not found");
+    
+    
+    await this.userAccountRepository.update(
+      userAccount.code,
+      {
+        isActive: true,
+        emailConfirmed: true,
+      },
+      { transaction }
+    );
+  
+    await this.userTokenRepository.delete(
+      { value: token },
+      { transaction }
+    );
+  }
+
   private async generateVerificationToken(userAccountCode: string, transaction?: Transaction): Promise<string> {
     const ulid = factory(detectPrng(false))
     const tokenValue = ulid()
-    await this.authenticationService.storeToken(userAccountCode, 'email_verification', 'email_verification', tokenValue, transaction);
+    await this.tokenService.storeToken(userAccountCode, 'email_verification', 'email_verification', tokenValue, transaction);
     return tokenValue;
   }
 }
