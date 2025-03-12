@@ -86,11 +86,11 @@ export class AuthenticationService {
 
         const userWithDetails = {
           ...user.toJSON(),
-          claims: claims.rows.map((claim) => ({
+          claims: claims.map((claim) => ({
             type: claim.claimType,
             value: claim.claimValue,
           })) || [],
-          providers: logins.rows.map((login) => ({
+          providers: logins.map((login) => ({
             provider: login.loginProvider,
             providerKey: login.providerKey,
             displayName: login.providerDisplayName,
@@ -343,7 +343,7 @@ export class AuthenticationService {
           where: { userAccountCode: req.user.code },
         });
 
-        req.user.claims = claims.rows.map((claim) => ({
+        req.user.claims = claims.map((claim) => ({
           type: claim.claimType,
           value: claim.claimValue,
         }));

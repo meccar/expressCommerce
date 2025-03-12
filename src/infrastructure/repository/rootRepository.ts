@@ -6,7 +6,11 @@ export class RootRepository<T extends Model> {
     ) {
     };
 
-    public async findAll(options?: FindOptions<T> & { transaction?: Transaction }): Promise<{ rows: T[]; count: number }> {
+    public async findAll(options?: FindOptions<T> & { transaction?: Transaction }): Promise<T[]> {
+        return await this.model.findAll(options);
+    }
+
+    public async findAllAndCount(options?: FindOptions<T> & { transaction?: Transaction }): Promise<{ rows: T[]; count: number }> {
         return await this.model.findAndCountAll(options);
     }
 

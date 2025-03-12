@@ -127,8 +127,8 @@ export class TokenService {
             }),
         ]);
 
-        const claims = claimsResult.rows || claimsResult;
-        const logins = loginsResult.rows || loginsResult;
+        const claims = claimsResult || claimsResult;
+        const logins = loginsResult || loginsResult;
 
         const accessPayload: JwtAccessPayload = {
             code: user.code,
