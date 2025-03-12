@@ -15,6 +15,7 @@ export const CONFIG = {
     DATABASE: process.env.DB_DATABASE || "expressCommerce",
   },
   SYSTEM: {
+    APP_NAME: process.env.APP_NAME,
     FRONTEND_URL: process.env.FRONTEND_URL,
     PORT: process.env.PORT || "8000",
     ENV: process.env.NODE_ENV,

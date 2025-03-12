@@ -4,14 +4,20 @@ export const Api = {
         userAccount: "/user",
         auth: "/auth",
         admin: "/admin",
+        mfa: "/mfa",
     },
     method :{
         register: '/register',
         login: '/login',
         logout: '/logout',
         refreshToken: "/refresh",
-        confirmEmail: "/confirm",
+        confirmEmail: "/verify-email",
         rotateKeys: "/rotate-keys",
+        generateTwoFactorSecret: "/generate-secret",
+        verifyTwoFactorSecret: "/verify-secret",
+        validateTwoFactorSecret: "/validate-secret",
+        disableTwoFactorSecret: "/disable-secret",
+        
     },
 } as const
 

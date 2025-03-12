@@ -7,7 +7,7 @@ export class UserAccountRoute extends BaseRoute {
   private readonly userAccountService: UserAccountService;
 
   constructor(router: express.Router) {
-    super(router, `${Api.service.userAccount}`);
+    super(router, Api.service.userAccount);
     this.userAccountService = new UserAccountService();
     this.initializeRoutes();
   }

@@ -9,6 +9,7 @@ import { CONFIG } from "@config/index";
 import {
   BadRequestException,
   compare,
+  messages,
   NotFoundException,
   Transactional,
   UnauthorizedException,
@@ -25,6 +26,8 @@ import { UserLoginRepository } from "./userLogin.repository";
 import { UserClaimRepository } from "./userClaim.repository";
 import { UserTokenRepository } from "./userToken.repository";
 import crypto from "crypto";
+import speakeasy from 'speakeasy';
+import QRCode from 'qrcode';
 
 export class AuthenticationService {
   private readonly MAX_FAILED_ATTEMPTS = 5;
@@ -288,6 +291,85 @@ export class AuthenticationService {
       tokens,
       expiresIn: 1800,
     });
+  }
+
+  @Transactional()
+  public async generateTwoFactorSecret(user: any, transactional?: Transaction): Promise<any> {
+    if (!user) throw new UnauthorizedException();
+    if (user.twoFactorEnabled) throw new BadRequestException();
+
+    const secret = speakeasy.generateSecret({
+      name: `${CONFIG.SYSTEM.APP_NAME}:${user.code}`,
+      length: 20
+    });
+
+    user.twoFactorSecret = secret.base32;
+    await user.save();
+
+    QRCode.toDataURL(secret.otpauth_url || '', (_, dataUrl) => {
+      return { otpauth_url: secret.otpauth_url, qrCode: dataUrl }
+    });
+    // return { otpauth_url: secret.otpauth_url, qrCode: dataUrl }
+  }
+
+  @Transactional()
+  public async verifyTwoFactorSecret(twoFactorSecretData: any, user: any, transactional?: Transaction): Promise<any> {
+    const {token} = twoFactorSecretData
+    if (!user || !token) throw new UnauthorizedException();
+    if (!user.twoFactorEnabled) throw new BadRequestException();
+
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: token,
+    });
+
+    if (!verified) throw new UnauthorizedException();
+    user.isTwoFactorVerified = true;
+    user.twoFactorEnabled = true;
+    await user.save();
+    
+    return { message: '2FA is verified' }
+  }
+
+  @Transactional()
+  public async validateTwoFactorSecret(twoFactorSecretData: any, user: any, transactional?: Transaction): Promise<any> {
+    const {token} = twoFactorSecretData
+    if (!user || !token) throw new UnauthorizedException();
+    if (!user.twoFactorEnabled || !user.isTwoFactorVerified) throw new BadRequestException();
+
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: token,
+      window: 1
+    });
+
+    if (!verified) throw new UnauthorizedException();
+
+    return { message: '2FA is valid' }
+  }
+
+  @Transactional()
+  public async disableTwoFactorSecret(twoFactorSecretData: any, user: any, transactional?: Transaction): Promise<any> {
+    const {token} = twoFactorSecretData
+    if (!user || !token) throw new UnauthorizedException();
+    if (!user.twoFactorEnabled || !user.isTwoFactorVerified) throw new BadRequestException();
+
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: token,
+      window: 1
+    });
+
+    if (!verified) throw new UnauthorizedException();
+    user.twoFactorEnabled = false;
+    user.isTwoFactorVerified = false;
+    user.twoFactorSecret = '';
+    await user.save();
+    
+    return { message: '2FA disabled successfully' }
   }
 
   private async generateToken(

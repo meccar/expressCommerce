@@ -14,7 +14,7 @@ export class UserToken extends Model<
   InferAttributes<UserToken>,
   InferCreationAttributes<UserToken>
 > {
-  @Attribute(DataTypes.STRING(20))
+  @Attribute(DataTypes.UUID.V1)
   @PrimaryKey
   declare userAccountCode: string;
 

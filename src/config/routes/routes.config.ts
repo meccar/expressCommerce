@@ -6,14 +6,9 @@ import { logger } from "@infrastructure/config";
 import { KeyRotationRoute } from "@modules/keyRotation/keyRotation.route";
 import { AuthenticationRoute } from "@modules/authentication/authentication.route";
 
-interface RouteRegistration {
-  path: string;
-  router: express.Router;
-}
-
 class RoutesConfiguration extends ServiceBase {
   private _app: express.Application | null = null;
-  private readonly _routes: Map<string, express.Router> = new Map();
+  private readonly _routes: express.Router[] = [];
   private readonly _apiBasePath: string;
 
   constructor() {
@@ -24,7 +19,7 @@ class RoutesConfiguration extends ServiceBase {
   public registerRoute<T extends BaseRoute>(RouteClass: new (router: express.Router) => T): this {
     const router = express.Router();
     new RouteClass(router);
-    this._routes.set(this._apiBasePath, router);
+    this._routes.push(router);
     return this;
   }
 
@@ -35,8 +30,8 @@ class RoutesConfiguration extends ServiceBase {
         .registerRoute(AuthenticationRoute)
         .registerRoute(KeyRotationRoute);
     
-    this._routes.forEach((router, path) => {
-      this._app!.use(path, router);
+    this._routes.forEach(route => {
+      this._app!.use(this._apiBasePath , route);
     });
 
     logger.info(messages.service.configured(RoutesConfiguration.name));

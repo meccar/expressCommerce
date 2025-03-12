@@ -17,6 +17,10 @@ export class AuthenticationRoute extends BaseRoute {
     this.protectedRoute('post', Api.method.logout, this.logout);
     this.protectedRoute('post', Api.method.refreshToken, this.refreshToken);
     this.protectedRoute('get', Api.method.confirmEmail, this.confirmEmail);
+    this.protectedRoute('post', Api.method.generateTwoFactorSecret, this.generateTwoFactorSecret);
+    this.protectedRoute('post', Api.method.verifyTwoFactorSecret, this.verifyTwoFactorSecret);
+    this.protectedRoute('post', Api.method.validateTwoFactorSecret, this.validateTwoFactorSecret);
+    this.protectedRoute('post', Api.method.disableTwoFactorSecret, this.disableTwoFactorSecret);
   }
 
   /**
@@ -76,5 +80,32 @@ export class AuthenticationRoute extends BaseRoute {
     const confirmEmailData = req.params;
     const result = await this.authenticationService.confirmEmail(confirmEmailData);
     res.success(result, statusCodes.OK);
+  }
+
+  private async generateTwoFactorSecret(req: Request, res: Response): Promise<void> {
+    const user = req.user;
+    const result = await this.authenticationService.generateTwoFactorSecret(user);
+    res.success(result, statusCodes.CREATED);
+  }
+
+  private async verifyTwoFactorSecret(req: Request, res: Response): Promise<void> {
+    const twoFactorSecretData = req.body;
+    const user = req.user;
+    const result = await this.authenticationService.verifyTwoFactorSecret(twoFactorSecretData, user);
+    res.success(result, statusCodes.OK);
+  }
+
+  private async validateTwoFactorSecret(req: Request, res: Response): Promise<void> {
+    const twoFactorSecretData = req.body;
+    const user = req.user;
+    const result = await this.authenticationService.validateTwoFactorSecret(twoFactorSecretData, user);
+    res.success(result.toString(), statusCodes.OK);
+  }
+
+  private async disableTwoFactorSecret(req: Request, res: Response): Promise<void> {
+    const twoFactorSecretData = req.body;
+    const user = req.user;
+    const result = await this.authenticationService.disableTwoFactorSecret(twoFactorSecretData, user);
+    res.success(result.toString(), statusCodes.OK);
   }
 }

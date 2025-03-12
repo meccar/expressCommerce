@@ -47,8 +47,7 @@ export class UserAccountService {
     const userAccount = await this.userAccountRepository.create(
       {email,
       username,
-      password: hashedPassword,
-      isActive: true},
+      password: hashedPassword},
       {transaction}!
     );
 
