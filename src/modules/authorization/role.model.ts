@@ -1,4 +1,4 @@
-import { BaseModel } from "@common/index";
+import { BaseModel, baseTableOptions } from "@common/index";
 import {
   CreationOptional,
   DataTypes,
@@ -9,14 +9,19 @@ import { Attribute, NotNull, Table } from "@sequelize/core/decorators-legacy";
 
 @Table({
   tableName: "Role",
-  underscored: true,
+  ...baseTableOptions,
+  hooks: {
+    beforeUpdate(data: Role) {
+      data.concurrencyStamp = new Date().getTime().toString();
+    },
+  },
 })
 export class Role extends BaseModel<
   InferAttributes<Role>,
   InferCreationAttributes<Role>
 > {
   @NotNull
-  @Attribute(DataTypes.STRING(256))
+  @Attribute(DataTypes.STRING(255))
   declare name: string;
 
   @Attribute(DataTypes.STRING)

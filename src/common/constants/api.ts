@@ -17,6 +17,7 @@ export const Api = {
         verifyTwoFactorSecret: "/verify-secret",
         validateTwoFactorSecret: "/validate-secret",
         disableTwoFactorSecret: "/disable-secret",
+        role: "/role",
         
     },
 } as const

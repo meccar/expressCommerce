@@ -1,14 +1,20 @@
-import { BaseModel, Gender, TableNames } from "@common/index";
+import { BaseModel, baseTableOptions, Gender, TableNames } from "@common/index";
 import {
   DataTypes,
   InferAttributes,
   InferCreationAttributes,
 } from "@sequelize/core";
-import { AllowNull, Attribute, Default, NotNull, Table } from "@sequelize/core/decorators-legacy";
+import {
+  AllowNull,
+  Attribute,
+  Default,
+  NotNull,
+  Table,
+} from "@sequelize/core/decorators-legacy";
 
 @Table({
   tableName: TableNames.UserProfile,
-  underscored: true,
+  ...baseTableOptions,
   comment: "Stores user profile information",
 })
 export class UserProfile extends BaseModel<

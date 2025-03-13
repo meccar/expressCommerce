@@ -1,28 +1,24 @@
-import { BaseModel } from "@common/index";
+import { BaseModel, baseTableOptions } from "@common/index";
 import {
   DataTypes,
   InferAttributes,
   InferCreationAttributes,
 } from "@sequelize/core";
-import {
-  Attribute,
-  NotNull,
-  Table,
-} from "@sequelize/core/decorators-legacy";
+import { Attribute, NotNull, Table } from "@sequelize/core/decorators-legacy";
 
 @Table({
   tableName: "UserRole",
-  underscored: true,
+  ...baseTableOptions,
 })
 export class UserRole extends BaseModel<
   InferAttributes<UserRole>,
   InferCreationAttributes<UserRole>
 > {
   @NotNull
-  @Attribute(DataTypes.STRING(20))
-  declare userCode: string;
+  @Attribute(DataTypes.UUID.V1)
+  declare userAccountCode: string;
 
   @NotNull
-  @Attribute(DataTypes.STRING(20))
+  @Attribute(DataTypes.UUID.V1)
   declare roleCode: string;
 }

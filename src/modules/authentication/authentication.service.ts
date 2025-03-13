@@ -13,11 +13,18 @@ import {
   UnauthorizedException,
 } from "@common/index";
 import { Transaction } from "@sequelize/core";
-import { UserAccount, UserAccountRepository, UserAccountService } from "@modules/userAccount";
+import {
+  UserAccount,
+  UserAccountRepository,
+  UserAccountService,
+} from "@modules/userAccount";
 import { UserLogin } from "./userLogin.model";
-import { JwtAccessPayload,SignInOptions, SignInResult } from "@infrastructure/index";
+import {
+  JwtAccessPayload,
+  SignInOptions,
+  SignInResult,
+} from "@infrastructure/index";
 import { UserLoginRepository } from "./userLogin.repository";
-import crypto from "crypto";
 import { TokenService } from "@modules/tokens/tokens.service";
 import { MfaService } from "@modules/mfa/mfa.service";
 import { UserClaim, UserClaimRepository } from "@modules/claims";
@@ -28,14 +35,13 @@ export class AuthenticationService {
 
   private userLoginRepository: UserLoginRepository = new UserLoginRepository();
   private userClaimRepository: UserClaimRepository = new UserClaimRepository();
-  private userAccountRepository: UserAccountRepository = new UserAccountRepository();
+  private userAccountRepository: UserAccountRepository =
+    new UserAccountRepository();
   private tokenService: TokenService = new TokenService();
   private mfaService: MfaService = new MfaService();
   private userAccountService: UserAccountService = new UserAccountService();
 
-  constructor() {
-    this.initializePassport();
-  }
+  constructor() {}
 
   private initializePassport() {
     const opts: StrategyOptions = {
@@ -86,15 +92,17 @@ export class AuthenticationService {
 
         const userWithDetails = {
           ...user.toJSON(),
-          claims: claims.map((claim) => ({
-            type: claim.claimType,
-            value: claim.claimValue,
-          })) || [],
-          providers: logins.map((login) => ({
-            provider: login.loginProvider,
-            providerKey: login.providerKey,
-            displayName: login.providerDisplayName,
-          })) || [],
+          claims:
+            claims.map((claim) => ({
+              type: claim.claimType,
+              value: claim.claimValue,
+            })) || [],
+          providers:
+            logins.map((login) => ({
+              provider: login.loginProvider,
+              providerKey: login.providerKey,
+              displayName: login.providerDisplayName,
+            })) || [],
         };
 
         return done(null, userWithDetails);
@@ -104,10 +112,10 @@ export class AuthenticationService {
     passport.deserializeUser(async (code: string, done) => {
       const user = await this.userAccountRepository.findOne({
         where: { code },
-        attributes: {exclude: ["password"]},
-      })
+        attributes: { exclude: ["password"] },
+      });
       done(null, user);
-    })
+    });
   }
 
   @Transactional()
@@ -157,7 +165,7 @@ export class AuthenticationService {
       expiresIn: isPersistent ? "1d" : "15m",
       isPersistent,
       transaction,
-    })
+    });
 
     await this.tokenService.storeRefreshToken(
       existingUser.code,
@@ -169,7 +177,11 @@ export class AuthenticationService {
   }
 
   @Transactional()
-  public async logout(logoutData: any, user: any, transaction?: Transaction): Promise<any> {
+  public async logout(
+    logoutData: any,
+    user: any,
+    transaction?: Transaction
+  ): Promise<any> {
     const { refreshToken } = logoutData;
 
     if (!user || !refreshToken) throw new UnauthorizedException();
@@ -179,30 +191,36 @@ export class AuthenticationService {
     if (decoded.code !== user.code) throw new UnauthorizedException();
 
     const storedToken = await this.tokenService.findToken(
-        decoded.code,
-        'JWT',
-        'RefreshToken',
-        refreshToken
-      )
-    
+      decoded.code,
+      "JWT",
+      "RefreshToken",
+      refreshToken
+    );
+
     if (!storedToken) throw new UnauthorizedException();
-    
+
     return { message: "Logged out successfully" };
   }
 
   @Transactional()
-  public async confirmEmail(confirmEmailData: any, transaction?: Transaction): Promise<any> {
+  public async confirmEmail(
+    confirmEmailData: any,
+    transaction?: Transaction
+  ): Promise<any> {
     const { token } = confirmEmailData;
     if (!token) throw new UnauthorizedException();
 
     await this.userAccountService.confirmEmail(token, transaction);
-  
+
     return { message: "Email verified successfully" };
   }
 
   @Transactional()
-  public async refreshToken(refreshTokenData: any, transaction?: Transaction): Promise<any> {
-    const {refreshToken} = refreshTokenData;
+  public async refreshToken(
+    refreshTokenData: any,
+    transaction?: Transaction
+  ): Promise<any> {
+    const { refreshToken } = refreshTokenData;
 
     if (!refreshToken) throw new UnauthorizedException();
 
@@ -211,25 +229,40 @@ export class AuthenticationService {
       { transaction }
     );
 
-    return ({
+    return {
       tokens: newTokens,
       expiresIn: 1800,
-    });
+    };
   }
 
-  public async generateTwoFactorSecret(user: any, transaction?: Transaction): Promise<any> {
+  public async generateTwoFactorSecret(
+    user: any,
+    transaction?: Transaction
+  ): Promise<any> {
     return this.mfaService.generateSecret(user, transaction);
   }
 
-  public async verifyTwoFactorSecret(data: any, user: any, transaction?: Transaction): Promise<any> {
+  public async verifyTwoFactorSecret(
+    data: any,
+    user: any,
+    transaction?: Transaction
+  ): Promise<any> {
     return this.mfaService.verifySecret(data, user, transaction);
   }
 
-  public async validateTwoFactorSecret(data: any, user: any, transaction?: Transaction): Promise<any> {
+  public async validateTwoFactorSecret(
+    data: any,
+    user: any,
+    transaction?: Transaction
+  ): Promise<any> {
     return this.mfaService.validateToken(data, user, transaction);
   }
 
-  public async disableTwoFactorSecret(data: any, user: any, transaction?: Transaction): Promise<any> {
+  public async disableTwoFactorSecret(
+    data: any,
+    user: any,
+    transaction?: Transaction
+  ): Promise<any> {
     return this.mfaService.disableSecret(data, user, transaction);
   }
 
@@ -364,9 +397,5 @@ export class AuthenticationService {
 
       next();
     };
-  }
-
-  private generateConcurrencyStampAsync() {
-    return crypto.randomUUID();
   }
 }

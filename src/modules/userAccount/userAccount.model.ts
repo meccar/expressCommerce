@@ -1,4 +1,4 @@
-import { BaseModel, FieldNames, IndexNames, TableNames } from "@common/index";
+import { BaseModel, baseTableOptions, FieldNames, IndexNames, TableNames } from "@common/index";
 import {
   CreationOptional,
   DataTypes,
@@ -20,8 +20,13 @@ import { IsDecimal, IsEmail, NotEmpty } from "@sequelize/validator.js";
 
 @Table({
   tableName: TableNames.UserAccount,
-  underscored: true,
+  ...baseTableOptions,
   comment: "Stores user authentication and security information",
+  hooks: {
+    afterCreate(data: UserAccount) {
+      data.password = "";
+    },
+  },
 })
 export class UserAccount extends Model<
   InferAttributes<UserAccount>,
@@ -34,17 +39,17 @@ export class UserAccount extends Model<
   declare code: CreationOptional<string>;
 
   @Attribute(DataTypes.STRING(255))
-  @IsEmail({msg: "Please enter a valid email"})
-  @NotEmpty({msg: "Please enter your email"})
+  @IsEmail({ msg: "Please enter a valid email" })
+  @NotEmpty({ msg: "Please enter your email" })
   declare email: string;
 
   @Attribute(DataTypes.STRING(100))
-  @NotEmpty({msg: "Please enter your username"})
+  @NotEmpty({ msg: "Please enter your username" })
   declare username: string;
 
   @NotNull
   @Attribute(DataTypes.STRING(255))
-  @NotEmpty({msg: "Please enter your password"})
+  @NotEmpty({ msg: "Please enter your password" })
   declare password: string;
 
   @Attribute(DataTypes.STRING(100))
@@ -71,8 +76,8 @@ export class UserAccount extends Model<
   declare securityStamp: string;
 
   @Attribute(DataTypes.STRING(20))
-  @IsDecimal({msg: "Please enter a valid phone number"})
-  @NotEmpty({msg: "Please enter your phone number"})
+  @IsDecimal({ msg: "Please enter a valid phone number" })
+  @NotEmpty({ msg: "Please enter your phone number" })
   declare phoneNumber: string;
 
   @NotNull
