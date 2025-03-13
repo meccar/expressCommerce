@@ -1,6 +1,6 @@
-import { Transaction } from "@sequelize/core";
-import { UserClaim } from "./userClaim.model";
-import { UserClaimRepository } from "./userClaim.repository";
+import { Transaction } from '@sequelize/core';
+import { UserClaim } from './userClaim.model';
+import { UserClaimRepository } from './userClaim.repository';
 
 export class ClaimService {
   private userClaimRepository: UserClaimRepository;
@@ -8,6 +8,4 @@ export class ClaimService {
   constructor(userClaimRepository: UserClaimRepository) {
     this.userClaimRepository = userClaimRepository;
   }
-
-  
 }

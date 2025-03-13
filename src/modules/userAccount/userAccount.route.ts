@@ -1,7 +1,7 @@
-import { Api, statusCodes } from "@common/index";
-import { UserAccountService } from "./userAccount.service";
-import express, { Request, Response } from "express";
-import { BaseRoute } from "@common/index";
+import { Api, statusCodes } from '@common/index';
+import { UserAccountService } from './userAccount.service';
+import express, { Request, Response } from 'express';
+import { BaseRoute } from '@common/index';
 
 export class UserAccountRoute extends BaseRoute {
   private readonly userAccountService: UserAccountService;

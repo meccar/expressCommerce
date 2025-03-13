@@ -1,6 +1,6 @@
-import { RootRepository } from "@infrastructure/index";
-import { Role } from "./role.model";
-import { Transaction } from "@sequelize/core";
+import { RootRepository } from '@infrastructure/index';
+import { Role } from './role.model';
+import { Transaction } from '@sequelize/core';
 
 export class RoleRepository extends RootRepository<Role> {
   constructor() {
@@ -11,13 +11,10 @@ export class RoleRepository extends RootRepository<Role> {
     return this.findOne({ where: { name } });
   }
 
-  public async createRole(
-    name: string,
-    transaction?: Transaction
-  ): Promise<Role> {
+  public async createRole(name: string, transaction?: Transaction): Promise<Role> {
     return await this.create(
       { name, concurrencyStamp: new Date().getTime().toString() },
-      { transaction }
+      { transaction },
     );
   }
 }

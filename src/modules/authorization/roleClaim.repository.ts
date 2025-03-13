@@ -1,6 +1,6 @@
-import { RootRepository } from "@infrastructure/index";
-import { RoleClaim } from "./roleClaim.model";
-import { Transaction } from "@sequelize/core";
+import { RootRepository } from '@infrastructure/index';
+import { RoleClaim } from './roleClaim.model';
+import { Transaction } from '@sequelize/core';
 
 export class RoleClaimRepository extends RootRepository<RoleClaim> {
   constructor() {
@@ -15,7 +15,7 @@ export class RoleClaimRepository extends RootRepository<RoleClaim> {
     roleCode: string,
     claimType: string,
     claimValue: string,
-    transaction?: Transaction
+    transaction?: Transaction,
   ): Promise<RoleClaim> {
     return this.create({ roleCode, claimType, claimValue }, { transaction });
   }
@@ -23,7 +23,7 @@ export class RoleClaimRepository extends RootRepository<RoleClaim> {
   public async removeClaim(
     roleCode: string,
     claimType: string,
-    claimValue?: string
+    claimValue?: string,
   ): Promise<number> {
     const whereClause: any = { roleCode, claimType };
 
@@ -35,7 +35,7 @@ export class RoleClaimRepository extends RootRepository<RoleClaim> {
   public async hasClaim(
     roleCode: string,
     claimType: string,
-    claimValue?: string
+    claimValue?: string,
   ): Promise<boolean> {
     const whereClause: any = { roleCode, claimType };
 

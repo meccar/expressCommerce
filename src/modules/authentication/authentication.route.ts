@@ -1,10 +1,10 @@
-import { BaseRoute } from "@common/utils";
-import { AuthenticationService } from "./authentication.service";
-import express, { Request, Response } from "express";
-import { Api, statusCodes } from "@common/index";
+import { BaseRoute } from '@common/utils';
+import { AuthenticationService } from './authentication.service';
+import express, { Request, Response } from 'express';
+import { Api, statusCodes } from '@common/index';
 
 export class AuthenticationRoute extends BaseRoute {
-  private readonly authenticationService: AuthenticationService
+  private readonly authenticationService: AuthenticationService;
 
   constructor(router: express.Router) {
     super(router, Api.service.auth);
@@ -38,7 +38,7 @@ export class AuthenticationRoute extends BaseRoute {
     const result = await this.authenticationService.login(loginData);
     res.success(result, statusCodes.OK);
   }
-  
+
   /**
    * @swagger
    * /auth/logout:
@@ -91,21 +91,30 @@ export class AuthenticationRoute extends BaseRoute {
   private async verifyTwoFactorSecret(req: Request, res: Response): Promise<void> {
     const twoFactorSecretData = req.body;
     const user = req.user;
-    const result = await this.authenticationService.verifyTwoFactorSecret(twoFactorSecretData, user);
+    const result = await this.authenticationService.verifyTwoFactorSecret(
+      twoFactorSecretData,
+      user,
+    );
     res.success(result, statusCodes.OK);
   }
 
   private async validateTwoFactorSecret(req: Request, res: Response): Promise<void> {
     const twoFactorSecretData = req.body;
     const user = req.user;
-    const result = await this.authenticationService.validateTwoFactorSecret(twoFactorSecretData, user);
+    const result = await this.authenticationService.validateTwoFactorSecret(
+      twoFactorSecretData,
+      user,
+    );
     res.success(result.toString(), statusCodes.OK);
   }
 
   private async disableTwoFactorSecret(req: Request, res: Response): Promise<void> {
     const twoFactorSecretData = req.body;
     const user = req.user;
-    const result = await this.authenticationService.disableTwoFactorSecret(twoFactorSecretData, user);
+    const result = await this.authenticationService.disableTwoFactorSecret(
+      twoFactorSecretData,
+      user,
+    );
     res.success(result.toString(), statusCodes.OK);
   }
 }

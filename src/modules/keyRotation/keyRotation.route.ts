@@ -1,7 +1,10 @@
-import { Api, BaseRoute, statusCodes } from "@common/index";
-import { EncryptableModelStatic, keyRotationService } from "@infrastructure/keyRotation/keyRotation.service";
-import { UserAccount } from "@modules/userAccount";
-import express, { Request, Response } from "express";
+import { Api, BaseRoute, statusCodes } from '@common/index';
+import {
+  EncryptableModelStatic,
+  keyRotationService,
+} from '@infrastructure/keyRotation/keyRotation.service';
+import { UserAccount } from '@modules/userAccount';
+import express, { Request, Response } from 'express';
 
 export class KeyRotationRoute extends BaseRoute {
   constructor(router: express.Router) {
@@ -17,18 +20,17 @@ export class KeyRotationRoute extends BaseRoute {
     const modelFieldMap = [
       {
         model: UserAccount as unknown as EncryptableModelStatic,
-        fields: ['password']
+        fields: ['password'],
       },
-
     ];
-    
+
     const options = {
       batchSize: req.body.batchSize || 100,
-      noIV: req.body.noIV || false
+      noIV: req.body.noIV || false,
     };
-    
+
     await keyRotationService.rotateKeys(modelFieldMap, options);
-    
-    res.success("success" ,statusCodes.OK);
+
+    res.success('success', statusCodes.OK);
   }
 }

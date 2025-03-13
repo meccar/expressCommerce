@@ -1,7 +1,7 @@
-import { BadRequestException, messages } from "@common/index";
-import { ServiceBase } from "@common/utils";
-import { logger } from "@infrastructure/config";
-import vault from "node-vault";
+import { BadRequestException, messages } from '@common/index';
+import { ServiceBase } from '@common/utils';
+import { logger } from '@infrastructure/config';
+import vault from 'node-vault';
 
 class VaultService extends ServiceBase {
   private client: vault.client | null = null;
@@ -10,12 +10,9 @@ class VaultService extends ServiceBase {
     super(VaultService.name);
   }
 
-  public async configure(
-    vaultAddress: string,
-    vaultToken: string
-  ): Promise<void> {
+  public async configure(vaultAddress: string, vaultToken: string): Promise<void> {
     this.client = vault({
-      apiVersion: "v1",
+      apiVersion: 'v1',
       endpoint: vaultAddress,
       token: vaultToken,
     });
@@ -38,7 +35,7 @@ class VaultService extends ServiceBase {
     if (!this.isConfigured) throw new BadRequestException();
 
     const currentKey = await this.getKey(keyPath);
-    const newKey = require("crypto").randomBytes(32).toString("hex");
+    const newKey = require('crypto').randomBytes(32).toString('hex');
 
     await this.client!.write(keyPath, { value: newKey });
 
@@ -48,15 +45,15 @@ class VaultService extends ServiceBase {
   }
 
   public async setupTransitEngine(
-    transitPath: string = "transit",
-    keyName: string = "database-encryption"
+    transitPath: string = 'transit',
+    keyName: string = 'database-encryption',
   ): Promise<void> {
     if (!this.isConfigured) throw new BadRequestException();
 
     const mounts = await this.client!.mounts();
 
     if (!mounts[`${transitPath}/`]) {
-      await this.client!.mount({ mount_point: transitPath, type: "transit" });
+      await this.client!.mount({ mount_point: transitPath, type: 'transit' });
       logger.info(`Transit engine mounted at ${transitPath}/`);
     }
 
@@ -64,10 +61,7 @@ class VaultService extends ServiceBase {
     logger.info(`Created encryption key ${keyName}`);
   }
 
-  public async rotateTransitKey(
-    transitPath: string,
-    keyName: string
-  ): Promise<void> {
+  public async rotateTransitKey(transitPath: string, keyName: string): Promise<void> {
     if (!this.isConfigured) throw new BadRequestException();
 
     await this.client!.write(`${transitPath}/keys/${keyName}/rotate`, {});
@@ -77,16 +71,13 @@ class VaultService extends ServiceBase {
   public async encryptWithTransit(
     plainText: string,
     transitPath: string,
-    keyName: string
+    keyName: string,
   ): Promise<string> {
     if (!this.isConfigured) throw new BadRequestException();
 
-    const { data } = await this.client!.write(
-      `${transitPath}/encrypt/${keyName}`,
-      {
-        plaintext: Buffer.from(plainText).toString("base64"),
-      }
-    );
+    const { data } = await this.client!.write(`${transitPath}/encrypt/${keyName}`, {
+      plaintext: Buffer.from(plainText).toString('base64'),
+    });
 
     return data.ciphertext;
   }
@@ -94,16 +85,13 @@ class VaultService extends ServiceBase {
   public async decryptWithTransit(
     ciphertext: string,
     transitPath: string,
-    keyName: string
+    keyName: string,
   ): Promise<string> {
     if (!this.isConfigured) throw new BadRequestException();
-    const { data } = await this.client!.write(
-      `${transitPath}/decrypt/${keyName}`,
-      {
-        ciphertext,
-      }
-    );
-    return Buffer.from(data.plaintext, "base64").toString("utf8");
+    const { data } = await this.client!.write(`${transitPath}/decrypt/${keyName}`, {
+      ciphertext,
+    });
+    return Buffer.from(data.plaintext, 'base64').toString('utf8');
   }
 }
 

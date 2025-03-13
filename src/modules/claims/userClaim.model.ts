@@ -4,11 +4,17 @@ import {
   InferAttributes,
   InferCreationAttributes,
   Model,
-} from "@sequelize/core";
-import { Attribute, AutoIncrement, NotNull, PrimaryKey, Table } from "@sequelize/core/decorators-legacy";
+} from '@sequelize/core';
+import {
+  Attribute,
+  AutoIncrement,
+  NotNull,
+  PrimaryKey,
+  Table,
+} from '@sequelize/core/decorators-legacy';
 
 @Table({
-  tableName: "UserClaim",
+  tableName: 'UserClaim',
   underscored: true,
 })
 export class UserClaim extends Model<
@@ -25,8 +31,8 @@ export class UserClaim extends Model<
   declare userAccountCode: string;
 
   @Attribute(DataTypes.STRING)
-  declare claimType: string 
-  
+  declare claimType: string;
+
   @Attribute(DataTypes.STRING)
-  declare claimValue: string 
+  declare claimValue: string;
 }

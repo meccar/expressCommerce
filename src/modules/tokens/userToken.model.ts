@@ -1,13 +1,8 @@
-import {
-  DataTypes,
-  InferAttributes,
-  InferCreationAttributes,
-  Model,
-} from "@sequelize/core";
-import { Attribute, PrimaryKey, Table } from "@sequelize/core/decorators-legacy";
+import { DataTypes, InferAttributes, InferCreationAttributes, Model } from '@sequelize/core';
+import { Attribute, PrimaryKey, Table } from '@sequelize/core/decorators-legacy';
 
 @Table({
-  tableName: "UserToken",
+  tableName: 'UserToken',
   underscored: true,
 })
 export class UserToken extends Model<

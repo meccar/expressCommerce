@@ -1,10 +1,10 @@
-import os from "os";
-import cluster from "cluster";
-import app from "./app";
-import "tsconfig-paths/register";
-import { logger } from "@infrastructure/index";
-import { messages } from "@common/index";
-import { CONFIG } from "@config/index";
+import os from 'os';
+import cluster from 'cluster';
+import app from './app';
+import 'tsconfig-paths/register';
+import { logger } from '@infrastructure/index';
+import { messages } from '@common/index';
+import { CONFIG } from '@config/index';
 
 // if (cluster.isPrimary) {
 //   logger.info(messages.cluster.primaryRunning(process.pid));
@@ -20,9 +20,7 @@ import { CONFIG } from "@config/index";
 //     logger.info(messages.cluster.newWorkerForked(newWorker.process.pid));
 //   });
 // } else {
-  app.listen(CONFIG.SYSTEM.PORT, () => {
-    logger.info(
-      messages.cluster.workerStarted(process.pid, CONFIG.SYSTEM.PORT)
-    );
-  });
+app.listen(CONFIG.SYSTEM.PORT, () => {
+  logger.info(messages.cluster.workerStarted(process.pid, CONFIG.SYSTEM.PORT));
+});
 // }

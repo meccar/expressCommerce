@@ -1,16 +1,13 @@
-import { ServiceBase, decrypt, encrypt, messages } from "@common/index";
-import { logger } from "@infrastructure/config";
-import { databaseService } from "@infrastructure/index";
-import { vaultService } from "@infrastructure/vault/vault.service";
-import { Transaction } from "@sequelize/core";
-import { Model, ModelStatic } from "sequelize-typescript";
+import { ServiceBase, decrypt, encrypt, messages } from '@common/index';
+import { logger } from '@infrastructure/config';
+import { databaseService } from '@infrastructure/index';
+import { vaultService } from '@infrastructure/vault/vault.service';
+import { Transaction } from '@sequelize/core';
+import { Model, ModelStatic } from 'sequelize-typescript';
 
 interface EncryptedModel extends Model {
   getDataValue(key: string): any;
-  update(
-    values: Record<string, any>,
-    options?: { transaction?: Transaction }
-  ): Promise<this>;
+  update(values: Record<string, any>, options?: { transaction?: Transaction }): Promise<this>;
 }
 
 export interface EncryptableModelStatic extends ModelStatic<EncryptedModel> {
@@ -35,10 +32,8 @@ class KeyRotationService extends ServiceBase {
   private keyName: string | null = null;
   private useTransitEngine: boolean = false;
 
-  private async withTransaction<T>(
-    callback: (transaction: Transaction) => Promise<T>
-  ): Promise<T> {
-    return databaseService.sequelize.transaction(async (transaction) => {
+  private async withTransaction<T>(callback: (transaction: Transaction) => Promise<T>): Promise<T> {
+    return databaseService.sequelize.transaction(async transaction => {
       return callback(transaction);
     });
   }
@@ -53,14 +48,14 @@ class KeyRotationService extends ServiceBase {
       useTransitEngine?: boolean;
       transitPath?: string;
       keyName?: string;
-    } = {}
+    } = {},
   ): Promise<void> {
     this.keyPath = keyPath;
     this.useTransitEngine = options.useTransitEngine || false;
 
     if (this.useTransitEngine) {
-      this.transitPath = options.transitPath || "transit";
-      this.keyName = options.keyName || "database-encryption";
+      this.transitPath = options.transitPath || 'transit';
+      this.keyName = options.keyName || 'database-encryption';
 
       await vaultService.setupTransitEngine(this.transitPath, this.keyName);
     }
@@ -75,10 +70,9 @@ class KeyRotationService extends ServiceBase {
 
   public async rotateKeys(
     modelFieldMap: EncryptedFieldMapping[],
-    options: { batchSize?: number; noIV?: boolean } = {}
+    options: { batchSize?: number; noIV?: boolean } = {},
   ): Promise<void> {
-    if (!this.isConfigured())
-      throw new Error(`${KeyRotationService.name} is not configured`);
+    if (!this.isConfigured()) throw new Error(`${KeyRotationService.name} is not configured`);
 
     const batchSize = options.batchSize || 100;
     const noIV = options.noIV || false;
@@ -93,9 +87,9 @@ class KeyRotationService extends ServiceBase {
     const oldKeyText = await vaultService.getKey(this.keyPath!);
     const newKeyText = await vaultService.rotateKey(this.keyPath!);
 
-    await this.withTransaction(async (transaction) => {
+    await this.withTransaction(async transaction => {
       for (const { model, fields } of modelFieldMap) {
-        const tableName = model.name || "unknown";
+        const tableName = model.name || 'unknown';
 
         logger.info(`Starting key rotation for table: ${tableName}`);
 
@@ -124,17 +118,9 @@ class KeyRotationService extends ServiceBase {
               const encryptedValue = record.getDataValue(field);
 
               if (encryptedValue) {
-                const decryptedValue = await decrypt(
-                  encryptedValue,
-                  oldKeyText,
-                  noIV
-                );
+                const decryptedValue = await decrypt(encryptedValue, oldKeyText, noIV);
 
-                const newEncryptedValue = await encrypt(
-                  decryptedValue,
-                  newKeyText,
-                  noIV
-                );
+                const newEncryptedValue = await encrypt(decryptedValue, newKeyText, noIV);
 
                 updates[field] = newEncryptedValue;
               }
@@ -146,9 +132,7 @@ class KeyRotationService extends ServiceBase {
           }
 
           processedCount += records.length;
-          logger.info(
-            `Processed ${processedCount}/${totalCount} records in ${tableName}`
-          );
+          logger.info(`Processed ${processedCount}/${totalCount} records in ${tableName}`);
 
           offset += batchSize;
         }
@@ -156,7 +140,7 @@ class KeyRotationService extends ServiceBase {
         logger.info(`Completed key rotation for table: ${tableName}`);
       }
 
-      logger.info("Key rotation completed successfully");
+      logger.info('Key rotation completed successfully');
     });
   }
 }

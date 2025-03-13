@@ -1,14 +1,14 @@
-import { BaseModel, baseTableOptions } from "@common/index";
+import { BaseModel, baseTableOptions } from '@common/index';
 import {
   CreationOptional,
   DataTypes,
   InferAttributes,
   InferCreationAttributes,
-} from "@sequelize/core";
-import { Attribute, NotNull, Table } from "@sequelize/core/decorators-legacy";
+} from '@sequelize/core';
+import { Attribute, NotNull, Table } from '@sequelize/core/decorators-legacy';
 
 @Table({
-  tableName: "Role",
+  tableName: 'Role',
   ...baseTableOptions,
   hooks: {
     beforeUpdate(data: Role) {
@@ -16,10 +16,7 @@ import { Attribute, NotNull, Table } from "@sequelize/core/decorators-legacy";
     },
   },
 })
-export class Role extends BaseModel<
-  InferAttributes<Role>,
-  InferCreationAttributes<Role>
-> {
+export class Role extends BaseModel<InferAttributes<Role>, InferCreationAttributes<Role>> {
   @NotNull
   @Attribute(DataTypes.STRING(255))
   declare name: string;

@@ -1,4 +1,4 @@
-import { CreationOptional, DataTypes, Model, sql } from "@sequelize/core";
+import { CreationOptional, DataTypes, Model, sql } from '@sequelize/core';
 import {
   Attribute,
   AutoIncrement,
@@ -7,12 +7,9 @@ import {
   Index,
   NotNull,
   PrimaryKey,
-} from "@sequelize/core/decorators-legacy";
+} from '@sequelize/core/decorators-legacy';
 
-export class BaseModel<T extends {} = any, U extends {} = T> extends Model<
-  T,
-  U
-> {
+export class BaseModel<T extends {} = any, U extends {} = T> extends Model<T, U> {
   @Attribute(DataTypes.INTEGER)
   @PrimaryKey
   @AutoIncrement

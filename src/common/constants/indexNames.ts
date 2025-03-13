@@ -1,13 +1,13 @@
 export const IndexNames = {
   UserAccount: {
-    Email: "email",
-    Username: "username",
-    Phone: "phone",
+    Email: 'email',
+    Username: 'username',
+    Phone: 'phone',
   },
   UserProfile: {
-    Code: "code",
-    Name: "name",
+    Code: 'code',
+    Name: 'name',
   },
 } as const;
 
-export type IndexNames = typeof IndexNames[keyof typeof IndexNames]
+export type IndexNames = (typeof IndexNames)[keyof typeof IndexNames];

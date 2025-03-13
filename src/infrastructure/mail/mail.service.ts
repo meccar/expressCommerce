@@ -1,14 +1,14 @@
-import { messages } from "@common/constants";
-import { BadRequestException } from "@common/exceptions";
-import { logger } from "@infrastructure/config";
-import { ServiceBase } from "@common/index";
-import Email from "email-templates";
-import path from "path";
+import { messages } from '@common/constants';
+import { BadRequestException } from '@common/exceptions';
+import { logger } from '@infrastructure/config';
+import { ServiceBase } from '@common/index';
+import Email from 'email-templates';
+import path from 'path';
 
 class MailService extends ServiceBase {
   private emailClient: Email | null = null;
   private senderEmail: string | null = null;
-  private templatesDir: string = path.join(__dirname, "templates");
+  private templatesDir: string = path.join(__dirname, 'templates');
 
   constructor() {
     super(MailService.name);
@@ -21,33 +21,32 @@ class MailService extends ServiceBase {
     pass: string,
     sender: string,
   ): Promise<void> {
+    this.emailClient = new Email({
+      message: {
+        from: sender,
+      },
+      transport: {
+        host,
+        port,
+        secure: port === 465,
+        auth: { user, pass },
+      },
+      views: {
+        root: this.templatesDir,
+        options: {
+          extension: 'hbs',
+        },
+      },
+      send: true,
+      preview: process.env.NODE_ENV !== 'production',
+      juice: true,
+      juiceResources: {
+        preserveImportant: true,
+      },
+    });
 
-      this.emailClient = new Email({
-        message: {
-          from: sender,
-        },
-        transport: {
-          host,
-          port,
-          secure: port === 465,
-          auth: { user, pass },
-        },
-        views: {
-          root: this.templatesDir,
-          options: {
-            extension: 'hbs'
-          }
-        },
-        send: true,
-        preview: process.env.NODE_ENV !== 'production',
-        juice: true,
-        juiceResources: {
-          preserveImportant: true
-        }
-      });
-      
     this.senderEmail = sender;
-    
+
     logger.info(messages.service.configured(MailService.name));
   }
 
@@ -59,7 +58,7 @@ class MailService extends ServiceBase {
     to: string,
     subject: string,
     template: string,
-    context: Record<string, any> = {}
+    context: Record<string, any> = {},
   ): Promise<boolean> {
     if (!this.isConfigured) {
       logger.error(messages.service.notConfigured(typeof MailService));
@@ -70,9 +69,9 @@ class MailService extends ServiceBase {
       template: template,
       message: {
         to,
-        subject
+        subject,
       },
-      locals: context
+      locals: context,
     });
 
     return true;

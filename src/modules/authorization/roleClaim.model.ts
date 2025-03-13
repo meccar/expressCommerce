@@ -4,17 +4,17 @@ import {
   InferAttributes,
   InferCreationAttributes,
   Model,
-} from "@sequelize/core";
+} from '@sequelize/core';
 import {
   Attribute,
   AutoIncrement,
   NotNull,
   PrimaryKey,
   Table,
-} from "@sequelize/core/decorators-legacy";
+} from '@sequelize/core/decorators-legacy';
 
 @Table({
-  tableName: "RoleClaim",
+  tableName: 'RoleClaim',
   underscored: true,
 })
 export class RoleClaim extends Model<
@@ -25,7 +25,7 @@ export class RoleClaim extends Model<
   @PrimaryKey
   @AutoIncrement
   declare id: CreationOptional<number>;
-  
+
   @NotNull
   @Attribute(DataTypes.STRING(20))
   declare roleCode: string;

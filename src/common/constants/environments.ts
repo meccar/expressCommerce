@@ -1,6 +1,6 @@
 export const Environments = {
-    Production: "production",
-    Development: "development",
-  } as const;
+  Production: 'production',
+  Development: 'development',
+} as const;
 
-export type Environments = typeof Environments[keyof typeof Environments]
+export type Environments = (typeof Environments)[keyof typeof Environments];

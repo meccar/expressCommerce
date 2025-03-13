@@ -1,3 +1,3 @@
-export * from "./userClaim.model";
-export * from "./userClaim.repository";
-export * from "./claims.service";
+export * from './userClaim.model';
+export * from './userClaim.repository';
+export * from './claims.service';

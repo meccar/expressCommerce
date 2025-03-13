@@ -1,6 +1,6 @@
 export const TableNames = {
-  UserAccount: "UserAccount",
-  UserProfile: "UserProfile",
+  UserAccount: 'UserAccount',
+  UserProfile: 'UserProfile',
 } as const;
 
-export type TableNames = typeof TableNames[keyof typeof TableNames]
+export type TableNames = (typeof TableNames)[keyof typeof TableNames];

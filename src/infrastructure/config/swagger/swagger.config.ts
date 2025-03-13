@@ -1,8 +1,8 @@
-import express from "express";
-import swaggerUi from "swagger-ui-express";
-import { swaggerDocs } from "./swaggerOptions";
-import { logger } from "@infrastructure/index";
-import { messages, ServiceBase } from "@common/index";
+import express from 'express';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerDocs } from './swaggerOptions';
+import { logger } from '@infrastructure/index';
+import { messages, ServiceBase } from '@common/index';
 
 class SwaggerConfiguration extends ServiceBase {
   private _app: express.Application | null = null;
@@ -19,11 +19,7 @@ class SwaggerConfiguration extends ServiceBase {
       validatorUrl: null,
     };
 
-    this._app.use(
-      "/api-docs",
-      swaggerUi.serve,
-      swaggerUi.setup(swaggerDocs, swaggerOptions)
-    );
+    this._app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, swaggerOptions));
 
     logger.info(messages.service.configured(SwaggerConfiguration.name));
   }

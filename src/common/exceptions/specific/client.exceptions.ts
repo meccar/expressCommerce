@@ -1,6 +1,6 @@
-import { messages } from "@common/index";
-import { HttpException } from "../base/http.exception";
-import { statusCodes } from "@common/index";
+import { messages } from '@common/index';
+import { HttpException } from '../base/http.exception';
+import { statusCodes } from '@common/index';
 
 export class BadRequestException extends HttpException {
   constructor(message?: string) {

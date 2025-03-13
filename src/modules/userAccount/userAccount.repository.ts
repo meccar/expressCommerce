@@ -1,6 +1,6 @@
-import { RootRepository } from "@infrastructure/repository/rootRepository";
-import { UserAccount } from "./userAccount.model";
-import { Op } from "@sequelize/core";
+import { RootRepository } from '@infrastructure/repository/rootRepository';
+import { UserAccount } from './userAccount.model';
+import { Op } from '@sequelize/core';
 
 export class UserAccountRepository extends RootRepository<UserAccount> {
   constructor() {
@@ -9,7 +9,7 @@ export class UserAccountRepository extends RootRepository<UserAccount> {
 
   public async findByEmailOrUsername(
     email?: string,
-    username?: string
+    username?: string,
   ): Promise<UserAccount | null> {
     const conditions = [];
 

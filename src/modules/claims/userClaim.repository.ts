@@ -1,6 +1,6 @@
-import { RootRepository } from "@infrastructure/repository/rootRepository";
-import { UserClaim } from "./userClaim.model";
-import { Transaction } from "@sequelize/core";
+import { RootRepository } from '@infrastructure/repository/rootRepository';
+import { UserClaim } from './userClaim.model';
+import { Transaction } from '@sequelize/core';
 
 export class UserClaimRepository extends RootRepository<UserClaim> {
   constructor() {
@@ -15,28 +15,20 @@ export class UserClaimRepository extends RootRepository<UserClaim> {
     userAccountCode: string,
     claimType: string,
     claimValue: string,
-    transaction?: Transaction
+    transaction?: Transaction,
   ): Promise<UserClaim> {
-    return this.create(
-      { userAccountCode, claimType, claimValue },
-      { transaction }
-    );
+    return this.create({ userAccountCode, claimType, claimValue }, { transaction });
   }
 
   public async addClaims(
     userAccountCode: string,
     claims: Array<{ type: string; value: string }>,
-    transaction?: Transaction
+    transaction?: Transaction,
   ): Promise<UserClaim[]> {
     const results: UserClaim[] = [];
 
     for (const claim of claims) {
-      const result = await this.addClaim(
-        userAccountCode,
-        claim.type,
-        claim.value,
-        transaction
-      );
+      const result = await this.addClaim(userAccountCode, claim.type, claim.value, transaction);
       results.push(result);
     }
 
@@ -46,7 +38,7 @@ export class UserClaimRepository extends RootRepository<UserClaim> {
   public async removeClaim(
     userAccountCode: string,
     claimType: string,
-    claimValue?: string
+    claimValue?: string,
   ): Promise<number> {
     const whereClause: any = { userAccountCode, claimType };
 
@@ -58,7 +50,7 @@ export class UserClaimRepository extends RootRepository<UserClaim> {
   public async hasClaim(
     userAccountCode: string,
     claimType: string,
-    claimValue?: string
+    claimValue?: string,
   ): Promise<boolean> {
     const whereClause: any = { userAccountCode, claimType };
 
@@ -72,14 +64,10 @@ export class UserClaimRepository extends RootRepository<UserClaim> {
 
   public async hasAnyClaim(
     userAccountCode: string,
-    claims: Array<{ type: string; value?: string }>
+    claims: Array<{ type: string; value?: string }>,
   ): Promise<boolean> {
     for (const claim of claims) {
-      const hasClaim = await this.hasClaim(
-        userAccountCode,
-        claim.type,
-        claim.value
-      );
+      const hasClaim = await this.hasClaim(userAccountCode, claim.type, claim.value);
       if (hasClaim) return true;
     }
     return false;
@@ -87,14 +75,10 @@ export class UserClaimRepository extends RootRepository<UserClaim> {
 
   public async hasAllClaims(
     userAccountCode: string,
-    claims: Array<{ type: string; value?: string }>
+    claims: Array<{ type: string; value?: string }>,
   ): Promise<boolean> {
     for (const claim of claims) {
-      const hasClaim = await this.hasClaim(
-        userAccountCode,
-        claim.type,
-        claim.value
-      );
+      const hasClaim = await this.hasClaim(userAccountCode, claim.type, claim.value);
       if (!hasClaim) return false;
     }
     return true;

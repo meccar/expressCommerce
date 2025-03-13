@@ -1,13 +1,8 @@
-import { Sequelize } from "@sequelize/core";
-import { MySqlDialect } from "@sequelize/mysql";
-import { dbConfig } from "../config/database/database.config";
-import { logger } from "@infrastructure/index";
-import {
-  BadRequestException,
-  Environments,
-  messages,
-  ServiceBase,
-} from "@common/index";
+import { Sequelize } from '@sequelize/core';
+import { MySqlDialect } from '@sequelize/mysql';
+import { dbConfig } from '../config/database/database.config';
+import { logger } from '@infrastructure/index';
+import { BadRequestException, Environments, messages, ServiceBase } from '@common/index';
 
 class DatabaseService extends ServiceBase {
   private _sequelize: Sequelize<MySqlDialect> | null = null;
@@ -17,8 +12,7 @@ class DatabaseService extends ServiceBase {
   }
 
   public get sequelize(): Sequelize<MySqlDialect> {
-    if (!this._sequelize)
-      throw new BadRequestException(messages.db.notInitialized());
+    if (!this._sequelize) throw new BadRequestException(messages.db.notInitialized());
 
     return this._sequelize;
   }
@@ -35,9 +29,7 @@ class DatabaseService extends ServiceBase {
     };
 
     await this._sequelize.sync(syncOptions);
-    logger.info(
-      messages.db.modelsSynchronized(workerPid, this._sequelize.models.size)
-    );
+    logger.info(messages.db.modelsSynchronized(workerPid, this._sequelize.models.size));
     logger.info(messages.service.configured(DatabaseService.name));
   }
 

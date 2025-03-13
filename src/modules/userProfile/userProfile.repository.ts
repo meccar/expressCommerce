@@ -1,6 +1,6 @@
-import { RootRepository } from "@infrastructure/repository/rootRepository";
-import { UserProfile } from "./userProfile.model";
-import { Transaction } from "@sequelize/core";
+import { RootRepository } from '@infrastructure/repository/rootRepository';
+import { UserProfile } from './userProfile.model';
+import { Transaction } from '@sequelize/core';
 
 export class UserProfileRepository extends RootRepository<UserProfile> {
   constructor() {
@@ -9,7 +9,7 @@ export class UserProfileRepository extends RootRepository<UserProfile> {
 
   public async createProfileByUserAccountCode(
     userAccountCode: string,
-    transaction?: Transaction
+    transaction?: Transaction,
   ): Promise<UserProfile> {
     return this.create({ userAccountCode }, { transaction });
   }

@@ -1,4 +1,4 @@
-import { BadRequestException } from "@common/exceptions";
+import { BadRequestException } from '@common/exceptions';
 
 export abstract class ServiceBase {
   private static instances: Map<string, ServiceBase> = new Map();

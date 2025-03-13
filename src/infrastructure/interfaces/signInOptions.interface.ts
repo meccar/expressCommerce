@@ -1,5 +1,5 @@
 export interface SignInOptions {
-    isPersistent?: boolean;
-    lockoutOnFailure?: boolean;
-    requireConfirmed?: boolean;
+  isPersistent?: boolean;
+  lockoutOnFailure?: boolean;
+  requireConfirmed?: boolean;
 }

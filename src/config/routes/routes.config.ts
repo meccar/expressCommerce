@@ -1,10 +1,10 @@
-import express from "express";
-import { Api, BaseRoute, messages, ServiceBase } from "@common/index";
-import { UserAccountRoute } from "@modules/index";
-import { CONFIG } from "../environment/environment.config";
-import { logger } from "@infrastructure/config";
-import { KeyRotationRoute } from "@modules/keyRotation/keyRotation.route";
-import { AuthenticationRoute } from "@modules/authentication/authentication.route";
+import express from 'express';
+import { Api, BaseRoute, messages, ServiceBase } from '@common/index';
+import { UserAccountRoute } from '@modules/index';
+import { CONFIG } from '../environment/environment.config';
+import { logger } from '@infrastructure/config';
+import { KeyRotationRoute } from '@modules/keyRotation/keyRotation.route';
+import { AuthenticationRoute } from '@modules/authentication/authentication.route';
 
 class RoutesConfiguration extends ServiceBase {
   private _app: express.Application | null = null;
@@ -27,11 +27,11 @@ class RoutesConfiguration extends ServiceBase {
     this._app = app;
 
     this.registerRoute(UserAccountRoute)
-        .registerRoute(AuthenticationRoute)
-        .registerRoute(KeyRotationRoute);
-    
+      .registerRoute(AuthenticationRoute)
+      .registerRoute(KeyRotationRoute);
+
     this._routes.forEach(route => {
-      this._app!.use(this._apiBasePath , route);
+      this._app!.use(this._apiBasePath, route);
     });
 
     logger.info(messages.service.configured(RoutesConfiguration.name));

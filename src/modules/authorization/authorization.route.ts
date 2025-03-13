@@ -1,7 +1,7 @@
-import { BaseRoute } from "@common/utils";
-import { AuthorizationService } from "./authorization.service";
-import express, { Request, Response } from "express";
-import { Api, statusCodes } from "@common/constants";
+import { BaseRoute } from '@common/utils';
+import { AuthorizationService } from './authorization.service';
+import express, { Request, Response } from 'express';
+import { Api, statusCodes } from '@common/constants';
 
 export class AuthorizationRoute extends BaseRoute {
   private readonly authorizationService = new AuthorizationService();
@@ -13,19 +13,11 @@ export class AuthorizationRoute extends BaseRoute {
   }
 
   private initializeRoutes(): void {
-    this.protectedRoute("post", Api.method.role, this.createRole);
-    this.protectedRoute(
-      "get",
-      `${Api.method.role}/:roleCode`,
-      this.getDetailRole
-    );
-    this.protectedRoute("get", Api.method.role, this.getAllRoles);
-    this.protectedRoute(
-      "delete",
-      `${Api.method.role}/:roleCode`,
-      this.deleteRole
-    );
-    this.protectedRoute("put", `${Api.method.role}/:roleCode`, this.updateRole);
+    this.protectedRoute('post', Api.method.role, this.createRole);
+    this.protectedRoute('get', `${Api.method.role}/:roleCode`, this.getDetailRole);
+    this.protectedRoute('get', Api.method.role, this.getAllRoles);
+    this.protectedRoute('delete', `${Api.method.role}/:roleCode`, this.deleteRole);
+    this.protectedRoute('put', `${Api.method.role}/:roleCode`, this.updateRole);
   }
 
   /**
@@ -115,10 +107,10 @@ export class AuthorizationRoute extends BaseRoute {
 
     res.success(
       {
-        message: "Role deleted successfully",
+        message: 'Role deleted successfully',
         affectedRows: result,
       },
-      statusCodes.OK
+      statusCodes.OK,
     );
   }
 
@@ -145,10 +137,7 @@ export class AuthorizationRoute extends BaseRoute {
     const { roleCode } = req.params;
     // const { roleCode } = req.query;
     const roleData = req.body;
-    const result = await this.authorizationService.updateRole(
-      roleCode,
-      roleData
-    );
+    const result = await this.authorizationService.updateRole(roleCode, roleData);
     res.success(result, statusCodes.OK);
   }
 }

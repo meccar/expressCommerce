@@ -1,1 +1,1 @@
-export * from "./mfa.service";
+export * from './mfa.service';
