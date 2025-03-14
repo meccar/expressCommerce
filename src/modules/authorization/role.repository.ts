@@ -1,4 +1,4 @@
-import { RootRepository } from '@infrastructure/index';
+import { RootRepository } from '@infrastructure/repository/rootRepository';
 import { Role } from './role.model';
 import { Transaction } from '@sequelize/core';
 

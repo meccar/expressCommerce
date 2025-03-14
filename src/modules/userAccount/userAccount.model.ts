@@ -1,4 +1,4 @@
-import { BaseModel, baseTableOptions, FieldNames, IndexNames, TableNames } from '@common/index';
+import { TableNames } from '@common/index';
 import {
   CreationOptional,
   DataTypes,
@@ -20,7 +20,6 @@ import { IsDecimal, IsEmail, NotEmpty } from '@sequelize/validator.js';
 
 @Table({
   tableName: TableNames.UserAccount,
-  ...baseTableOptions,
   comment: 'Stores user authentication and security information',
   hooks: {
     afterCreate(data: UserAccount) {

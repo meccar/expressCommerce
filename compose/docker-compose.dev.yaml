@@ -1,27 +1,13 @@
 services:
-  db:
-    image: mysql:8.0
-    container_name: mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: Admin@123
-      MYSQL_USER: expressCommerceUser
-      MYSQL_PASSWORD: Admin@123
-      MYSQL_DATABASE: expressCommerce
-      TZ: Asia/Bangkok
+  api:
+    build: ../
+    container_name: expressCommerce
     ports:
-      - "3306:3306"
-
-  vault:
-    image: vault:1.13.3
-    container_name: vault
-    restart: always
-    volumes:
-      - ./vault/data:/vault/data
-      - ./vault/config:/vault/config
-    environment:
-      VAULT_ADDR: "http://vault:8200"
-      VAULT_LOCAL_CONFIG: '{"backend": {"file": {"path": "/vault/data"}}, "listener": {"tcp": {"address": "0.0.0.0:8200", "tls_disable": "1"}}, "ui": true}'
-    cap_add:
-      - IPC_LOCK
-    ports:
-      - "8200:8200"
+      - '8000:8000'
+    networks:
+      - expressCommerce-network
+    env_file:
+      - ../.env.production
+networks:
+  expressCommerce-network:
+    driver: bridge

@@ -1,11 +1,10 @@
 import { Environments } from '@common/index';
 import dotenv from 'dotenv';
 
-if (process.env.NODE_ENV === Environments.Development) {
-  dotenv.config({ path: '.env.local' });
-} else {
-  dotenv.config();
-}
+console.log(process.env.NODE_ENV);
+dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
+console.log(process.env.DB_HOST);
+
 export const CONFIG = {
   DB: {
     HOST: process.env.DB_HOST || 'localhost',

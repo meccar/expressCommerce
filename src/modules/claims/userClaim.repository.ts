@@ -44,7 +44,7 @@ export class UserClaimRepository extends RootRepository<UserClaim> {
 
     if (claimValue) whereClause.claimValue = claimValue;
 
-    return this.delete({ where: whereClause });
+    return this.softDelete({ where: whereClause });
   }
 
   public async hasClaim(

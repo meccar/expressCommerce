@@ -1,0 +1,25 @@
+services:
+  mysql-local:
+    image: mysql:8.0
+    container_name: mysql
+    cap_add:
+      - SYS_NICE
+    environment:
+      MYSQL_ROOT_PASSWORD: Admin@123
+      MYSQL_USER: expressCommerceUser
+      MYSQL_PASSWORD: Admin@123
+      MYSQL_DATABASE: expressCommerce
+      TZ: Asia/Bangkok
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql-local:/var/lib/mysql
+      - ./mysql-local/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - expressCommerce-network
+networks:
+  expressCommerce-network:
+    driver: bridge
+volumes:
+  mysql-local:
+    driver: local

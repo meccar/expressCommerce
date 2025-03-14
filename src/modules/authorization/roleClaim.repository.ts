@@ -1,4 +1,4 @@
-import { RootRepository } from '@infrastructure/index';
+import { RootRepository } from '@infrastructure/repository/rootRepository';
 import { RoleClaim } from './roleClaim.model';
 import { Transaction } from '@sequelize/core';
 
@@ -29,7 +29,7 @@ export class RoleClaimRepository extends RootRepository<RoleClaim> {
 
     if (claimValue) whereClause.claimValue = claimValue;
 
-    return this.delete({ where: whereClause });
+    return this.softDelete({ where: whereClause });
   }
 
   public async hasClaim(

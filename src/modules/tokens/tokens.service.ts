@@ -54,7 +54,7 @@ export class TokenService {
 
   @Transactional()
   public async invalidateToken(token: string, transaction?: Transaction): Promise<void> {
-    await this.userTokenRepository.delete({ value: token }, { transaction });
+    await this.userTokenRepository.softDelete({ value: token }, { transaction });
   }
 
   @Transactional()
@@ -62,7 +62,7 @@ export class TokenService {
     userAccountCode: string,
     transaction?: Transaction,
   ): Promise<void> {
-    await this.userTokenRepository.delete({ userAccountCode }, { transaction });
+    await this.userTokenRepository.softDelete({ userAccountCode }, { transaction });
   }
 
   @Transactional()

@@ -1,4 +1,4 @@
-import { RootRepository } from '@infrastructure/index';
+import { RootRepository } from '@infrastructure/repository/rootRepository';
 import { UserRole } from './userRole.model';
 import { Transaction } from '@sequelize/core';
 
@@ -28,14 +28,14 @@ export class UserRoleRepository extends RootRepository<UserRole> {
     roleCode: string,
     transaction?: Transaction,
   ): Promise<number> {
-    return this.delete({ where: { userAccountCode, roleCode } }, { transaction });
+    return this.softDelete({ where: { userAccountCode, roleCode } }, { transaction });
   }
 
   public async removeUserFromAllRoles(
     userAccountCode: string,
     transaction?: Transaction,
   ): Promise<number> {
-    return this.delete({ where: { userAccountCode } }, { transaction });
+    return this.softDelete({ where: { userAccountCode } }, { transaction });
   }
 
   public async isInRole(userAccountCode: string, roleCode: string): Promise<boolean> {
