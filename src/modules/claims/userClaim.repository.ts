@@ -7,8 +7,41 @@ export class UserClaimRepository extends RootRepository<UserClaim> {
     super(UserClaim);
   }
 
-  public async GetUserClaims(userAccountCode: string): Promise<UserClaim[]> {
+  public async getUserClaims(userAccountCode: string): Promise<UserClaim[]> {
     return await this.findAll({ where: { userAccountCode } });
+  }
+
+  public async getDetailClaim(
+    userAccountCode: string,
+    claimType: string,
+  ): Promise<UserClaim | null> {
+    return await this.findOne({ where: { userAccountCode, claimType } });
+  }
+
+  public async updateEmailConfirmedClaim(
+    userAccountCode: string,
+    claimValue: string,
+    transaction?: Transaction,
+  ): Promise<UserClaim[] | null> {
+    const claim = await this.getDetailClaim(userAccountCode, 'EmailConfirmed');
+
+    if (!claim) return null;
+    claim.claimValue = claimValue;
+    const [number, claims] = await this.update(userAccountCode, claim, {
+      transaction,
+    });
+    return claims;
+  }
+
+  public async updateClaim(
+    userAccountCode: string,
+    claim: UserClaim,
+    transaction?: Transaction,
+  ): Promise<UserClaim[]> {
+    const [number, claims] = await this.update(userAccountCode, claim, {
+      transaction,
+    });
+    return claims;
   }
 
   public async addClaim(

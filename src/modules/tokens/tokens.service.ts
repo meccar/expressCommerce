@@ -102,10 +102,7 @@ export class TokenService {
     } = {},
   ): Promise<{ accessToken: string; refreshToken: string }> {
     const [claimsResult, loginsResult] = await Promise.all([
-      this.userClaimRepository.findAll({
-        where: { userAccountCode: user.code },
-        transaction: options.transaction,
-      }),
+      this.userClaimRepository.getUserClaims(user.code),
       this.userLoginRepository.findAll({
         where: { userAccountCode: user.code },
         transaction: options.transaction,

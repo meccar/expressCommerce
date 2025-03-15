@@ -23,6 +23,20 @@ export class UserRoleRepository extends RootRepository<UserRole> {
     return this.create({ userAccountCode, roleCode }, { transaction });
   }
 
+  public async addUsersToRole(
+    userAccountCodes: string[],
+    roleCode: string,
+    transaction?: Transaction,
+  ): Promise<UserRole[]> {
+    const userRoles = Promise.all(
+      userAccountCodes.map(userAccountCode =>
+        this.create({ userAccountCode, roleCode }, { transaction }),
+      ),
+    );
+
+    return userRoles;
+  }
+
   public async removeFromRole(
     userAccountCode: string,
     roleCode: string,

@@ -1,9 +1,10 @@
-import { AuthenticatedUser } from '@infrastructure/index';
+import { IAuthenticatedUser } from '@infrastructure/index';
 
 declare global {
   namespace Express {
     interface Request {
-      user?: AuthenticatedUser;
+      user?: IAuthenticatedUser;
+      startTime?: number;
     }
   }
 }

@@ -1,4 +1,3 @@
-import { UserClaimRepository } from '@modules/claims';
 import { RoleRepository } from './role.repository';
 import { RoleClaimRepository } from './roleClaim.repository';
 import { UserRoleRepository } from './userRole.repository';
@@ -11,7 +10,6 @@ export class AuthorizationService {
   private roleRepository: RoleRepository = new RoleRepository();
   private userRoleRepository: UserRoleRepository = new UserRoleRepository();
   private roleClaimRepository: RoleClaimRepository = new RoleClaimRepository();
-  private userClaimRepository: UserClaimRepository = new UserClaimRepository();
   constructor() {}
 
   @Transactional()

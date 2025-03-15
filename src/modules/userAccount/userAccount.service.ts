@@ -1,4 +1,4 @@
-import { mailService } from '@infrastructure/index';
+import { IAuthenticatedUser, IUserClaim, IUserProvider, mailService } from '@infrastructure/index';
 import {
   BadRequestException,
   encrypt,
@@ -23,7 +23,6 @@ export class UserAccountService {
   private userTokenRepository: UserTokenRepository = new UserTokenRepository();
   private userClaimRepository: UserClaimRepository = new UserClaimRepository();
   private userRoleRepository: UserRoleRepository = new UserRoleRepository();
-  private roleRepository: RoleRepository = new RoleRepository();
   private tokenService: TokenService = new TokenService();
 
   constructor() {}
@@ -63,7 +62,6 @@ export class UserAccountService {
 
     await this.userRoleRepository.addRoleToUser(userAccount.code, userRole!.roleCode, transaction);
 
-    await this.userClaimRepository.addClaim(userAccount.code, 'Email', email, transaction);
     await this.userClaimRepository.addClaim(
       userAccount.code,
       'EmailConfirmed',
@@ -89,8 +87,11 @@ export class UserAccountService {
   public async registerUser(userCode: string, email: string, roles: string[]) {}
 
   @Transactional()
-  public async confirmEmail(token: string, transaction?: Transaction): Promise<void> {
-    const userToken = await this.userTokenRepository.findOne({
+  public async confirmEmail(
+    token: string,
+    transaction?: Transaction,
+  ): Promise<{ claim: IUserClaim; provider: IUserProvider }> {
+    const userEmailToken = await this.userTokenRepository.findOne({
       where: {
         loginProvider: 'email_verification',
         name: 'email_verification',
@@ -98,15 +99,15 @@ export class UserAccountService {
       },
     });
 
-    if (!userToken) throw new UnauthorizedException('Invalid or expired verification token');
+    if (!userEmailToken) throw new UnauthorizedException('Invalid or expired verification token');
 
     const userAccount = await this.userAccountRepository.findOne({
-      where: { code: userToken.userAccountCode },
+      where: { code: userEmailToken.userAccountCode },
     });
 
     if (!userAccount) throw new BadRequestException('User account not found');
 
-    await this.userAccountRepository.update(
+    const [affectedCount, updatedUserAccount] = await this.userAccountRepository.update(
       userAccount.code,
       {
         isActive: true,
@@ -114,8 +115,54 @@ export class UserAccountService {
       },
       { transaction },
     );
+    if (affectedCount === 0) throw new BadRequestException();
 
     await this.userTokenRepository.softDelete({ value: token }, { transaction });
+    const updateEmailConfirmedClaim = await this.userClaimRepository.updateEmailConfirmedClaim(
+      userAccount.code,
+      'true',
+      transaction,
+    );
+    if (!updateEmailConfirmedClaim) throw new BadRequestException();
+
+    const roleClaim: IUserClaim = {
+      type: 'Role',
+      value: Roles.User,
+    };
+
+    const newRoleClaim = await this.userClaimRepository.addClaim(
+      userAccount.code,
+      roleClaim.type,
+      roleClaim.value,
+      transaction,
+    );
+
+    const userProvider: IUserProvider = {
+      name: 'Email Account',
+      provider: 'Email',
+      providerKey: userAccount.email,
+    };
+
+    const newUserToken = await this.userTokenRepository.addUserToken(
+      userAccount.code,
+      userProvider.provider,
+      userProvider.name!,
+      userProvider.providerKey,
+      transaction,
+    );
+
+    const claim: IUserClaim = {
+      type: newRoleClaim.claimType,
+      value: newRoleClaim.claimValue,
+    };
+
+    const provider: IUserProvider = {
+      provider: newUserToken.loginProvider,
+      providerKey: newUserToken.value,
+      name: newUserToken.name,
+    };
+
+    return { claim, provider };
   }
 
   private async generateVerificationToken(

@@ -1,3 +1,10 @@
+.editorconfig
+.prettierignore
+.prettierrc
+admin-policy.hcl
+policy.hcl
+root-policy.hcl
+
 # Node.js specific
 node_modules
 npm-debug.log
@@ -34,6 +41,6 @@ yarn.lock
 .env.*.local
 .env.development
 
-# Docker files (in case you don't want to copy .dockerignore or Dockerfile)
+# Docker files
 .dockerignore
 Dockerfile
