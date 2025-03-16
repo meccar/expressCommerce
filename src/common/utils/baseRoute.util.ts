@@ -1,4 +1,4 @@
-import { nextCatch } from '@common/index';
+import { nextCatch, RequestValidator } from '@common/index';
 import { authenticationMiddleware } from '@gateway/index';
 import express from 'express';
 import { Request, Response } from 'express';
@@ -16,15 +16,38 @@ export abstract class BaseRoute {
     return nextCatch(handler.bind(this));
   }
 
-  protected protectedRoute(method: HttpMethod, path: string, handler: RouteHandler): void {
-    this.router[method](
-      `${this.basePath}${path}`,
-      authenticationMiddleware(),
-      this.errorHandler(handler),
-    );
+  protected protectedRoute(
+    method: HttpMethod,
+    path: string,
+    handler: RouteHandler,
+    validator?: RequestValidator,
+  ): void {
+    validator
+      ? this.router[method](
+          `${this.basePath}${path}`,
+          authenticationMiddleware(),
+          validator.middleware(),
+          this.errorHandler(handler),
+        )
+      : this.router[method](
+          `${this.basePath}${path}`,
+          authenticationMiddleware(),
+          this.errorHandler(handler),
+        );
   }
 
-  protected publicRoute(method: HttpMethod, path: string, handler: RouteHandler): void {
-    this.router[method](`${this.basePath}${path}`, this.errorHandler(handler));
+  protected publicRoute(
+    method: HttpMethod,
+    path: string,
+    handler: RouteHandler,
+    validator?: RequestValidator,
+  ): void {
+    validator
+      ? this.router[method](
+          `${this.basePath}${path}`,
+          validator.middleware(),
+          this.errorHandler(handler),
+        )
+      : this.router[method](`${this.basePath}${path}`, this.errorHandler(handler));
   }
 }

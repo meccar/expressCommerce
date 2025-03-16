@@ -1,7 +1,6 @@
 import { Sequelize } from '@sequelize/core';
 import { MySqlDialect } from '@sequelize/mysql';
-import { dbConfig } from '../config/database/database.config';
-import { logger } from '@infrastructure/index';
+import { dbConfig, logger } from '@infrastructure/index';
 import { BadRequestException, Environments, messages, ServiceBase } from '@common/index';
 
 class DatabaseService extends ServiceBase {

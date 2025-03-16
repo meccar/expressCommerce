@@ -6,7 +6,8 @@
     "start:dev": "nodemon",
     "start:prod": "cross-env NODE_ENV=production node dist/server.js",
     "start:debug": "nodemon",
-    "build": "tsc && cp tsconfig.json dist/",
+    "clean": "tsc --build --clean",
+    "build": "yarn clean && tsc --build",
     "format": "prettier --write \"src/**/*.ts\"",
     "prettier:check": "prettier --check \"src/**/*.ts\"",
     "prettier:fix": "prettier --write \"src/**/*.ts\""
@@ -52,8 +53,8 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.7.3",
-    "ulid": "^2.3.0"
+    "ulid": "^2.3.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
@@ -72,7 +73,8 @@
     "pino-pretty": "^13.0.0",
     "prettier": "^3.5.3",
     "sequelize-cli": "^6.6.2",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
   },
   "_moduleAliases": {
     "@common": "dist/common",
@@ -83,8 +85,7 @@
     "@userAccount": "dist/modules/userAccount",
     "@userProfile": "dist/modules/userProfile",
     "@authentication": "dist/modules/authentication",
-    "@authorization": "dist/modules/authorization",
-    "src": "dist"
+    "@authorization": "dist/modules/authorization"
   },
   "nodemonConfig": {
     "watch": [

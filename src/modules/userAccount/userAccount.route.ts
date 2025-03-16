@@ -2,6 +2,7 @@ import { Api, statusCodes } from '@common/index';
 import { UserAccountService } from './userAccount.service';
 import express, { Request, Response } from 'express';
 import { BaseRoute } from '@common/index';
+import { validation } from '@gateway/middleware';
 
 export class UserAccountRoute extends BaseRoute {
   private readonly userAccountService: UserAccountService;

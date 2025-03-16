@@ -1,9 +1,7 @@
 import { Environments } from '@common/index';
 import dotenv from 'dotenv';
 
-console.log(process.env.NODE_ENV);
 dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
-console.log(process.env.DB_HOST);
 
 export const CONFIG = {
   DB: {

@@ -5,7 +5,7 @@ import { IAuthenticatedUser } from '@infrastructure/index';
 
 export function authenticationMiddleware() {
   return (req: Request, res: Response, next: NextFunction) => {
-    req.startTime = Date.now();
+    // req.startTime = Date.now();
     passport.authenticate('jwt', { session: false }, (user: IAuthenticatedUser | false) => {
       if (!user) throw new UnauthorizedException();
       req.user = user;
