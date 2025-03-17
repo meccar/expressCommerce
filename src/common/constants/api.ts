@@ -5,6 +5,7 @@ export const Api = {
     auth: '/auth',
     admin: '/admin',
     mfa: '/mfa',
+    seed: '/seed',
   },
   method: {
     register: '/register',

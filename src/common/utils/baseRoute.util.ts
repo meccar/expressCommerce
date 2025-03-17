@@ -1,5 +1,6 @@
-import { nextCatch, RequestValidator } from '@common/index';
+import { nextCatch } from '@common/index';
 import { authenticationMiddleware } from '@gateway/index';
+import { RequestValidator } from '@gateway/middleware/validation/validator/validator';
 import express from 'express';
 import { Request, Response } from 'express';
 

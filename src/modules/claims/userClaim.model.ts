@@ -27,7 +27,7 @@ export class UserClaim extends Model<
   declare id: CreationOptional<number>;
 
   @NotNull
-  @Attribute(DataTypes.STRING(20))
+  @Attribute(DataTypes.UUID.V1)
   declare userAccountCode: string;
 
   @Attribute(DataTypes.STRING)

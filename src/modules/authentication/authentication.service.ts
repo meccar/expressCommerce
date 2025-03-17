@@ -16,6 +16,7 @@ import { UserLoginRepository } from './userLogin.repository';
 import { TokenService } from '@modules/tokens/tokens.service';
 import { MfaService } from '@modules/mfa/mfa.service';
 import { UserClaim, UserClaimRepository } from '@modules/claims';
+import { UserTokenRepository } from '@modules/tokens';
 
 export class AuthenticationService {
   private readonly MAX_FAILED_ATTEMPTS = 5;
@@ -24,6 +25,7 @@ export class AuthenticationService {
   private userLoginRepository: UserLoginRepository = new UserLoginRepository();
   private userClaimRepository: UserClaimRepository = new UserClaimRepository();
   private userAccountRepository: UserAccountRepository = new UserAccountRepository();
+  private userTokenRepository: UserTokenRepository = new UserTokenRepository();
   private tokenService: TokenService = new TokenService();
   private mfaService: MfaService = new MfaService();
   private userAccountService: UserAccountService = new UserAccountService();
@@ -133,7 +135,7 @@ export class AuthenticationService {
       transaction,
     });
 
-    await this.tokenService.storeRefreshToken(existingUser.code, tokens.refreshToken, transaction);
+    // await this.tokenService.storeRefreshToken(existingUser.code, tokens.refreshToken, transaction);
 
     return tokens;
   }
@@ -186,8 +188,27 @@ export class AuthenticationService {
     };
   }
 
-  public async generateTwoFactorSecret(user: any, transaction?: Transaction): Promise<any> {
-    return this.mfaService.generateSecret(user, transaction);
+  public async generateTwoFactorSecret(mfaData: any, transaction?: Transaction): Promise<any> {
+    const { token } = mfaData;
+    if (!token) throw new UnauthorizedException();
+
+    const userEmailToken = await this.userTokenRepository.findOne({
+      where: {
+        loginProvider: 'email_verification',
+        name: 'email_verification',
+        value: token,
+      },
+    });
+
+    if (!userEmailToken) throw new UnauthorizedException('Invalid or expired verification token');
+
+    const userAccount = await this.userAccountRepository.findOne({
+      where: { code: userEmailToken.userAccountCode },
+    });
+
+    if (!userAccount) throw new BadRequestException('User account not found');
+
+    return this.mfaService.generateSecret(userAccount, transaction);
   }
 
   public async verifyTwoFactorSecret(
@@ -198,12 +219,27 @@ export class AuthenticationService {
     return this.mfaService.verifySecret(data, user, transaction);
   }
 
-  public async validateTwoFactorSecret(
-    data: any,
-    user: any,
-    transaction?: Transaction,
-  ): Promise<any> {
-    return this.mfaService.validateToken(data, user, transaction);
+  public async validateTwoFactorSecret(mfaData: any, transaction?: Transaction): Promise<any> {
+    const { token, mfaToken } = mfaData;
+    if (!token || !mfaToken) throw new UnauthorizedException();
+
+    const userEmailToken = await this.userTokenRepository.findOne({
+      where: {
+        loginProvider: 'email_verification',
+        name: 'email_verification',
+        value: token,
+      },
+    });
+
+    if (!userEmailToken) throw new UnauthorizedException('Invalid or expired verification token');
+
+    const userAccount = await this.userAccountRepository.findOne({
+      where: { code: userEmailToken.userAccountCode },
+    });
+
+    if (!userAccount) throw new BadRequestException('User account not found');
+
+    return this.mfaService.validateToken(mfaToken, userAccount, transaction);
   }
 
   public async disableTwoFactorSecret(

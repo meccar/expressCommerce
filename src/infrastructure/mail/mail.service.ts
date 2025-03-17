@@ -34,7 +34,7 @@ class MailService extends ServiceBase {
       views: {
         root: this.templatesDir,
         options: {
-          extension: 'hbs',
+          extension: 'ejs',
         },
       },
       send: true,

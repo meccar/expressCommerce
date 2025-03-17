@@ -5,3 +5,4 @@ export * from './authentication.interface';
 export * from './jwt.interface';
 export * from './signInOptions.interface';
 export * from './permission.interface';
+export * from './validation.interface';

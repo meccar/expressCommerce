@@ -105,6 +105,6 @@ export class UserAccount extends Model<
 
   @NotNull
   @Attribute(DataTypes.BOOLEAN)
-  @Default(true)
+  @Default(false)
   declare isActive: boolean;
 }

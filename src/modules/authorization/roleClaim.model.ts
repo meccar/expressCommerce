@@ -27,7 +27,7 @@ export class RoleClaim extends Model<
   declare id: CreationOptional<number>;
 
   @NotNull
-  @Attribute(DataTypes.STRING(20))
+  @Attribute(DataTypes.UUID.V1)
   declare roleCode: string;
 
   @Attribute(DataTypes.STRING)

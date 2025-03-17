@@ -18,7 +18,7 @@ export class UserLogin extends Model<
   @Attribute(DataTypes.STRING)
   declare providerDisplayName: string;
 
-  @Attribute(DataTypes.STRING(20))
+  @Attribute(DataTypes.UUID.V1)
   @PrimaryKey
   declare userAccountCode: string;
 }

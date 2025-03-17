@@ -47,14 +47,11 @@ export class RootRepository<T extends Model> {
     code: number | string,
     data: Partial<T>,
     options?: Omit<UpdateOptions<T>, 'where'> & { transaction?: Transaction },
-  ): Promise<[number, T[]]> {
-    const [affectedCount, affectedRows] = await this.model.update(data as any, {
+  ): Promise<[number]> {
+    return await this.model.update(data as any, {
       where: { code } as any,
       ...options,
-      returning: true,
     });
-
-    return [affectedCount, affectedRows];
   }
 
   public async softDelete(

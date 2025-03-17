@@ -23,15 +23,17 @@ export class UserAccountService {
   private userTokenRepository: UserTokenRepository = new UserTokenRepository();
   private userClaimRepository: UserClaimRepository = new UserClaimRepository();
   private userRoleRepository: UserRoleRepository = new UserRoleRepository();
+  private roleRepository: RoleRepository = new RoleRepository();
   private tokenService: TokenService = new TokenService();
 
   constructor() {}
 
   @Transactional()
   public async register(userData: any, transaction?: Transaction): Promise<any> {
-    const { email, username, password } = userData;
+    const { email, username } = userData;
+    let { password } = userData;
 
-    if (!((email && password) || (username && password)))
+    if (!(email && password && username && password))
       throw new BadRequestException('Please enter email, username and password');
 
     const existingUser = await this.userAccountRepository.findByEmailOrUsername(email, username);
@@ -49,6 +51,7 @@ export class UserAccountService {
       { transaction }!,
     );
 
+    password = '';
     userData.password = '';
 
     if (!userAccount) throw new BadRequestException();
@@ -58,9 +61,10 @@ export class UserAccountService {
       transaction,
     );
 
-    const userRole = await this.userRoleRepository.findOneByUser(userAccount.code);
+    const role = await this.roleRepository.findByName(Roles.User);
+    if (!role) throw new BadRequestException();
 
-    await this.userRoleRepository.addRoleToUser(userAccount.code, userRole!.roleCode, transaction);
+    await this.userRoleRepository.addRoleToUser(userAccount.code, role.code, transaction);
 
     await this.userClaimRepository.addClaim(
       userAccount.code,
@@ -107,7 +111,7 @@ export class UserAccountService {
 
     if (!userAccount) throw new BadRequestException('User account not found');
 
-    const [affectedCount, updatedUserAccount] = await this.userAccountRepository.update(
+    const [affectedRows] = await this.userAccountRepository.update(
       userAccount.code,
       {
         isActive: true,
@@ -115,7 +119,10 @@ export class UserAccountService {
       },
       { transaction },
     );
-    if (affectedCount === 0) throw new BadRequestException();
+    if (affectedRows === 0) throw new BadRequestException();
+
+    if (!userAccount.twoFactorEnabled)
+      throw new BadRequestException('Two-factor authentication required');
 
     await this.userTokenRepository.softDelete({ value: token }, { transaction });
     const updateEmailConfirmedClaim = await this.userClaimRepository.updateEmailConfirmedClaim(

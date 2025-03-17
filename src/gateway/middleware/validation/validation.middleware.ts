@@ -1,10 +1,9 @@
-import { RequestValidator } from '@common/index';
-import { LoginValidator } from '@common/utils/validator/index';
+import { RegisterValidator } from './validator/register.validator';
 
 export class ValidationMiddleware {
-  public readonly post: Record<string, RequestValidator> = {
-    login: new LoginValidator(),
-  };
+  public readonly post = {
+    register: new RegisterValidator(),
+  } as const;
 }
 
 export const validation = new ValidationMiddleware();

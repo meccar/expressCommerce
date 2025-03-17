@@ -22,26 +22,24 @@ export class UserClaimRepository extends RootRepository<UserClaim> {
     userAccountCode: string,
     claimValue: string,
     transaction?: Transaction,
-  ): Promise<UserClaim[] | null> {
+  ): Promise<[number] | null> {
     const claim = await this.getDetailClaim(userAccountCode, 'EmailConfirmed');
 
     if (!claim) return null;
     claim.claimValue = claimValue;
-    const [number, claims] = await this.update(userAccountCode, claim, {
+    return await this.update(userAccountCode, claim, {
       transaction,
     });
-    return claims;
   }
 
   public async updateClaim(
     userAccountCode: string,
     claim: UserClaim,
     transaction?: Transaction,
-  ): Promise<UserClaim[]> {
-    const [number, claims] = await this.update(userAccountCode, claim, {
+  ): Promise<[number]> {
+    return await this.update(userAccountCode, claim, {
       transaction,
     });
-    return claims;
   }
 
   public async addClaim(

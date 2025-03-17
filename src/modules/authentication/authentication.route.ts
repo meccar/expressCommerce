@@ -2,6 +2,7 @@ import { BaseRoute } from '@common/utils';
 import { AuthenticationService } from './authentication.service';
 import express, { Request, Response } from 'express';
 import { Api, statusCodes } from '@common/index';
+import { validation } from '@gateway/middleware';
 
 export class AuthenticationRoute extends BaseRoute {
   private readonly authenticationService: AuthenticationService;
@@ -14,12 +15,12 @@ export class AuthenticationRoute extends BaseRoute {
 
   private initializeRoutes(): void {
     this.publicRoute('post', Api.method.login, this.login);
+    this.publicRoute('get', Api.method.confirmEmail, this.confirmEmail);
+    this.publicRoute('post', Api.method.generateTwoFactorSecret, this.generateTwoFactorSecret);
+    this.publicRoute('post', Api.method.validateTwoFactorSecret, this.validateTwoFactorSecret);
     this.protectedRoute('post', Api.method.logout, this.logout);
     this.protectedRoute('post', Api.method.refreshToken, this.refreshToken);
-    this.protectedRoute('get', Api.method.confirmEmail, this.confirmEmail);
-    this.protectedRoute('post', Api.method.generateTwoFactorSecret, this.generateTwoFactorSecret);
     this.protectedRoute('post', Api.method.verifyTwoFactorSecret, this.verifyTwoFactorSecret);
-    this.protectedRoute('post', Api.method.validateTwoFactorSecret, this.validateTwoFactorSecret);
     this.protectedRoute('post', Api.method.disableTwoFactorSecret, this.disableTwoFactorSecret);
   }
 
@@ -77,14 +78,14 @@ export class AuthenticationRoute extends BaseRoute {
   }
 
   private async confirmEmail(req: Request, res: Response): Promise<void> {
-    const confirmEmailData = req.params;
+    const confirmEmailData = req.query;
     const result = await this.authenticationService.confirmEmail(confirmEmailData);
     res.success(result, statusCodes.OK);
   }
 
   private async generateTwoFactorSecret(req: Request, res: Response): Promise<void> {
-    const user = req.user;
-    const result = await this.authenticationService.generateTwoFactorSecret(user);
+    const mfaData = req.query;
+    const result = await this.authenticationService.generateTwoFactorSecret(mfaData);
     res.success(result, statusCodes.CREATED);
   }
 
@@ -99,13 +100,9 @@ export class AuthenticationRoute extends BaseRoute {
   }
 
   private async validateTwoFactorSecret(req: Request, res: Response): Promise<void> {
-    const twoFactorSecretData = req.body;
-    const user = req.user;
-    const result = await this.authenticationService.validateTwoFactorSecret(
-      twoFactorSecretData,
-      user,
-    );
-    res.success(result.toString(), statusCodes.OK);
+    const mfaData = { ...req.query, ...req.body };
+    const result = await this.authenticationService.validateTwoFactorSecret(mfaData);
+    res.success(result, statusCodes.OK);
   }
 
   private async disableTwoFactorSecret(req: Request, res: Response): Promise<void> {
@@ -115,6 +112,6 @@ export class AuthenticationRoute extends BaseRoute {
       twoFactorSecretData,
       user,
     );
-    res.success(result.toString(), statusCodes.OK);
+    res.success(result, statusCodes.OK);
   }
 }

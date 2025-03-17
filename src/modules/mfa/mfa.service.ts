@@ -11,7 +11,7 @@ export class MfaService {
     if (user.twoFactorEnabled) throw new BadRequestException();
 
     const secret = speakeasy.generateSecret({
-      name: `${CONFIG.SYSTEM.APP_NAME}:${user.code}`,
+      name: `${CONFIG.SYSTEM.APP_NAME}:${user.email}`,
       length: 20,
     });
 
@@ -40,7 +40,6 @@ export class MfaService {
     transaction?: Transaction,
   ): Promise<any> {
     const { token } = twoFactorSecretData;
-    if (!user || !token) throw new UnauthorizedException();
     if (!user.twoFactorEnabled) throw new BadRequestException();
 
     const verified = this.verifyToken(token, user.twoFactorSecret);
@@ -54,19 +53,17 @@ export class MfaService {
   }
 
   @Transactional()
-  public async validateToken(
-    twoFactorSecretData: any,
-    user: any,
-    transaction?: Transaction,
-  ): Promise<any> {
-    const { token } = twoFactorSecretData;
-    if (!user || !token) throw new UnauthorizedException();
-    if (!user.twoFactorEnabled || !user.isTwoFactorVerified) throw new BadRequestException();
+  public async validateToken(mfaToken: any, user: any, transaction?: Transaction): Promise<any> {
+    if (!user || !mfaToken) throw new UnauthorizedException();
+    if (user.twoFactorEnabled || user.isTwoFactorVerified) throw new BadRequestException();
 
-    const verified = this.verifyToken(token, user.twoFactorSecret);
+    const verified = this.verifyToken(mfaToken, user.twoFactorSecret);
 
     if (!verified) throw new UnauthorizedException();
 
+    user.twoFactorEnabled = true;
+    user.isTwoFactorVerified = true;
+    await user.save({ transaction });
     return { message: '2FA is valid' };
   }
 
