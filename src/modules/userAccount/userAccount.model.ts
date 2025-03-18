@@ -17,11 +17,17 @@ import {
   Table,
 } from '@sequelize/core/decorators-legacy';
 import { IsDecimal, IsEmail, NotEmpty } from '@sequelize/validator.js';
+import { factory, detectPrng } from 'ulid';
 
 @Table({
   tableName: TableNames.UserAccount,
   comment: 'Stores user authentication and security information',
   hooks: {
+    beforeCreate(data: UserAccount) {
+      const ulid = factory(detectPrng(false));
+      const tokenValue = ulid();
+      data.confirmToken = tokenValue;
+    },
     afterCreate(data: UserAccount) {
       data.password = '';
     },

@@ -3,7 +3,7 @@ import { Api, BaseRoute, messages, ServiceBase } from '@common/index';
 import { UserAccountRoute } from '@modules/index';
 import { CONFIG } from '../environment/environment.config';
 import { logger } from '@infrastructure/config';
-import { KeyRotationRoute } from '@modules/keyRotation/keyRotation.route';
+// import { KeyRotationRoute } from '@modules/keyRotation/keyRotation.route';
 import { AuthenticationRoute } from '@modules/authentication/authentication.route';
 import { SeedRoute } from '@modules/seed/seed.route';
 
@@ -29,8 +29,8 @@ class RoutesConfiguration extends ServiceBase {
 
     this.registerRoute(UserAccountRoute)
       .registerRoute(AuthenticationRoute)
-      .registerRoute(SeedRoute)
-      .registerRoute(KeyRotationRoute);
+      .registerRoute(SeedRoute);
+    // .registerRoute(KeyRotationRoute);
 
     this._routes.forEach(route => {
       this._app!.use(this._apiBasePath, route);

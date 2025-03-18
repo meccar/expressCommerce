@@ -1,6 +1,6 @@
 import { RootRepository } from '@infrastructure/repository/rootRepository';
 import { UserAccount } from './userAccount.model';
-import { Op } from '@sequelize/core';
+import { Op, Transaction } from '@sequelize/core';
 
 export class UserAccountRepository extends RootRepository<UserAccount> {
   constructor() {

@@ -121,7 +121,7 @@ export class AuthenticationService {
 
     if (!signInResult.succeeded) throw new UnauthorizedException(signInResult.message);
 
-    await this.signInWithClaimsAsync(
+    await this.userLoginRepository.signInWithClaimsAsync(
       existingUser.code,
       existingUser.email,
       existingUser.email,
@@ -135,7 +135,7 @@ export class AuthenticationService {
       transaction,
     });
 
-    // await this.tokenService.storeRefreshToken(existingUser.code, tokens.refreshToken, transaction);
+    await this.tokenService.storeRefreshToken(existingUser.code, tokens.refreshToken, transaction);
 
     return tokens;
   }
@@ -192,21 +192,13 @@ export class AuthenticationService {
     const { token } = mfaData;
     if (!token) throw new UnauthorizedException();
 
-    const userEmailToken = await this.userTokenRepository.findOne({
+    const userAccount = await this.userAccountRepository.findOne({
       where: {
-        loginProvider: 'email_verification',
-        name: 'email_verification',
-        value: token,
+        confirmToken: token,
       },
     });
 
-    if (!userEmailToken) throw new UnauthorizedException('Invalid or expired verification token');
-
-    const userAccount = await this.userAccountRepository.findOne({
-      where: { code: userEmailToken.userAccountCode },
-    });
-
-    if (!userAccount) throw new BadRequestException('User account not found');
+    if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
 
     return this.mfaService.generateSecret(userAccount, transaction);
   }
@@ -223,21 +215,13 @@ export class AuthenticationService {
     const { token, mfaToken } = mfaData;
     if (!token || !mfaToken) throw new UnauthorizedException();
 
-    const userEmailToken = await this.userTokenRepository.findOne({
+    const userAccount = await this.userAccountRepository.findOne({
       where: {
-        loginProvider: 'email_verification',
-        name: 'email_verification',
-        value: token,
+        confirmToken: token,
       },
     });
 
-    if (!userEmailToken) throw new UnauthorizedException('Invalid or expired verification token');
-
-    const userAccount = await this.userAccountRepository.findOne({
-      where: { code: userEmailToken.userAccountCode },
-    });
-
-    if (!userAccount) throw new BadRequestException('User account not found');
+    if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
 
     return this.mfaService.validateToken(mfaToken, userAccount, transaction);
   }
@@ -309,24 +293,6 @@ export class AuthenticationService {
 
     await user.save();
     return { succeeded: true };
-  }
-
-  private async signInWithClaimsAsync(
-    userAccountCode: string,
-    loginProvider: string,
-    providerKey: string,
-    providerDisplayName: string,
-    transaction?: Transaction,
-  ): Promise<UserLogin> {
-    return this.userLoginRepository.create(
-      {
-        userAccountCode,
-        loginProvider,
-        providerKey,
-        providerDisplayName,
-      },
-      { transaction },
-    );
   }
 
   private async validateExternalProviderToken(

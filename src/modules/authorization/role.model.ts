@@ -1,4 +1,4 @@
-import { BaseModel, baseTableOptions } from '@common/index';
+import { BaseModel, baseTableOptions, TableNames } from '@common/index';
 import {
   CreationOptional,
   DataTypes,
@@ -8,7 +8,7 @@ import {
 import { Attribute, NotNull, Table } from '@sequelize/core/decorators-legacy';
 
 @Table({
-  tableName: 'Role',
+  tableName: TableNames.Role,
   ...baseTableOptions,
   hooks: {
     beforeUpdate(data: Role) {

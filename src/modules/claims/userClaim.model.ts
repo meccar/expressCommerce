@@ -1,3 +1,4 @@
+import { TableNames } from '@common/index';
 import {
   CreationOptional,
   DataTypes,
@@ -14,8 +15,7 @@ import {
 } from '@sequelize/core/decorators-legacy';
 
 @Table({
-  tableName: 'UserClaim',
-  underscored: true,
+  tableName: TableNames.UserClaim,
 })
 export class UserClaim extends Model<
   InferAttributes<UserClaim>,

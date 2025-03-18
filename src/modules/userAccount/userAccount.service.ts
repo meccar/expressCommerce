@@ -1,4 +1,4 @@
-import { IAuthenticatedUser, IUserClaim, IUserProvider, mailService } from '@infrastructure/index';
+import { IUserClaim, IUserProvider, mailService } from '@infrastructure/index';
 import {
   BadRequestException,
   encrypt,
@@ -10,7 +10,6 @@ import { UserProfileRepository } from '@modules/userProfile';
 import { Transaction } from '@sequelize/core';
 import { UserAccountRepository } from './userAccount.repository';
 import { CONFIG } from '@config/index';
-import { factory, detectPrng } from 'ulid';
 import { UserTokenRepository } from '@modules/tokens/userToken.repository';
 import { TokenService } from '@modules/tokens/tokens.service';
 import { UserClaimRepository } from '@modules/claims';
@@ -73,8 +72,7 @@ export class UserAccountService {
       transaction,
     );
 
-    const verificationToken = await this.generateVerificationToken(userAccount.code, transaction);
-    const verificationUrl = `${CONFIG.SYSTEM.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+    const verificationUrl = `${CONFIG.SYSTEM.FRONTEND_URL}/verify-email?token=${userAccount.confirmToken}`;
 
     await mailService.send(email, 'Welcome to our platform!', 'email-verification', {
       username: username ?? email,
@@ -95,21 +93,13 @@ export class UserAccountService {
     token: string,
     transaction?: Transaction,
   ): Promise<{ claim: IUserClaim; provider: IUserProvider }> {
-    const userEmailToken = await this.userTokenRepository.findOne({
+    const userAccount = await this.userAccountRepository.findOne({
       where: {
-        loginProvider: 'email_verification',
-        name: 'email_verification',
-        value: token,
+        confirmToken: token,
       },
     });
 
-    if (!userEmailToken) throw new UnauthorizedException('Invalid or expired verification token');
-
-    const userAccount = await this.userAccountRepository.findOne({
-      where: { code: userEmailToken.userAccountCode },
-    });
-
-    if (!userAccount) throw new BadRequestException('User account not found');
+    if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
 
     const [affectedRows] = await this.userAccountRepository.update(
       userAccount.code,
@@ -170,21 +160,5 @@ export class UserAccountService {
     };
 
     return { claim, provider };
-  }
-
-  private async generateVerificationToken(
-    userAccountCode: string,
-    transaction?: Transaction,
-  ): Promise<string> {
-    const ulid = factory(detectPrng(false));
-    const tokenValue = ulid();
-    await this.tokenService.storeToken(
-      userAccountCode,
-      'email_verification',
-      'email_verification',
-      tokenValue,
-      transaction,
-    );
-    return tokenValue;
   }
 }

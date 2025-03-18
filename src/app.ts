@@ -6,7 +6,7 @@ import { databaseService, logger, mailService, swaggerConfiguration } from '@inf
 import { errorMiddleware, responseMiddleware } from '@gateway/index';
 import { CONFIG, routesConfiguration } from '@config/index';
 import { vaultService } from '@infrastructure/vault/vault.service';
-import { keyRotationService } from '@infrastructure/keyRotation/keyRotation.service';
+// import { keyRotationService } from '@infrastructure/keyRotation/keyRotation.service';
 
 class App {
   public app: Express;
@@ -35,11 +35,11 @@ class App {
       CONFIG.VAULT.VAULT_TOKEN,
     );
 
-    await keyRotationService.configure('/secret/data/my-key', {
-      useTransitEngine: CONFIG.VAULT.USE_TRANSIT_ENGINE,
-      transitPath: CONFIG.VAULT.TRANSIT_PATH,
-      keyName: CONFIG.VAULT.KEY_NAME,
-    });
+    // await keyRotationService.configure('/secret/data/my-key', {
+    //   useTransitEngine: CONFIG.VAULT.USE_TRANSIT_ENGINE,
+    //   transitPath: CONFIG.VAULT.TRANSIT_PATH,
+    //   keyName: CONFIG.VAULT.KEY_NAME,
+    // });
 
     await swaggerConfiguration.configure(this.app);
   }

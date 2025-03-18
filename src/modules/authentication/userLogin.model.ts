@@ -1,9 +1,9 @@
+import { TableNames } from '@common/index';
 import { DataTypes, InferAttributes, InferCreationAttributes, Model } from '@sequelize/core';
 import { Attribute, PrimaryKey, Table } from '@sequelize/core/decorators-legacy';
 
 @Table({
-  tableName: 'UserLogin',
-  underscored: true,
+  tableName: TableNames.UserLogin,
 })
 export class UserLogin extends Model<
   InferAttributes<UserLogin>,

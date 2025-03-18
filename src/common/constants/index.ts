@@ -9,3 +9,4 @@ export * from './api';
 export * from './gender';
 export * from './roles';
 export * from './baseTableOptions';
+export * from './methods';

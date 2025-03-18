@@ -1,5 +1,7 @@
+import { HttpMethod } from '@common/index';
+
 export interface Permission {
-  action: string;
+  action: HttpMethod;
   subject: string;
   fields: string[];
 }

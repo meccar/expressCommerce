@@ -5,6 +5,7 @@ import { Transactional } from '@common/decorators';
 import { Transaction } from '@sequelize/core';
 import { Role } from './role.model';
 import { BadRequestException, NotFoundException } from '@common/exceptions';
+import { Permission } from '@infrastructure/interfaces';
 
 export class AuthorizationService {
   private roleRepository: RoleRepository = new RoleRepository();
@@ -13,10 +14,13 @@ export class AuthorizationService {
   constructor() {}
 
   @Transactional()
-  public async createRole(roleData: { name: string }, transaction?: Transaction): Promise<Role> {
-    const { name } = roleData;
+  public async createRole(
+    roleData: { name: string; permission: Permission },
+    transaction?: Transaction,
+  ): Promise<Role> {
+    const { name, permission } = roleData;
 
-    if (!name) throw new BadRequestException();
+    if (!name || !permission) throw new BadRequestException();
 
     const existingRole = await this.roleRepository.findByName(name);
     if (existingRole) throw new BadRequestException();

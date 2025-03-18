@@ -9,7 +9,7 @@ export class RegisterValidator extends RequestValidator {
     password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
   });
 
-  async validate(data: any) {
+  public async validate(data: any) {
     const errors: ValidationError[] = [];
     try {
       this.loginSchema.parse(data);

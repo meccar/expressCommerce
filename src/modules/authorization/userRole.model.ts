@@ -1,9 +1,9 @@
-import { BaseModel, baseTableOptions } from '@common/index';
+import { BaseModel, baseTableOptions, TableNames } from '@common/index';
 import { DataTypes, InferAttributes, InferCreationAttributes } from '@sequelize/core';
 import { Attribute, NotNull, Table } from '@sequelize/core/decorators-legacy';
 
 @Table({
-  tableName: 'UserRole',
+  tableName: TableNames.UserRole,
   ...baseTableOptions,
 })
 export class UserRole extends BaseModel<

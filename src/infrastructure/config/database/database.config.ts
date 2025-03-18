@@ -54,7 +54,6 @@ export const dbConfig: Options<MySqlDialect> = {
       : false,
   models: models,
   define: {
-    timestamps: true,
     underscored: true,
   },
 };

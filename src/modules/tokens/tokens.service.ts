@@ -10,6 +10,7 @@ import { Transaction } from '@sequelize/core';
 import { Secret } from 'jsonwebtoken';
 import type { Algorithm, SignOptions } from 'jsonwebtoken';
 import * as jwt from 'jsonwebtoken';
+import { ulid } from 'ulid';
 
 export class TokenService {
   private userTokenRepository: UserTokenRepository = new UserTokenRepository();
@@ -114,7 +115,6 @@ export class TokenService {
 
     const accessPayload: JwtAccessPayload = {
       code: user.code,
-      email: user.email || '',
       username: user.username || '',
       tokenType: 'access',
       claims: Array.isArray(claims)
@@ -129,15 +129,14 @@ export class TokenService {
             providerKey: login.providerKey,
           }))
         : [],
-      jti: crypto.randomUUID(),
+      jti: ulid(),
     };
 
     const refreshPayload: JwtRefreshPayload = {
       code: user.code,
-      email: user.email || '',
       username: user.username || '',
       tokenType: 'refresh',
-      jti: crypto.randomUUID(),
+      jti: ulid(),
     };
 
     const algorithm: Algorithm = 'HS256';

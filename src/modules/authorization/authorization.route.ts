@@ -2,6 +2,7 @@ import { BaseRoute } from '@common/utils';
 import { AuthorizationService } from './authorization.service';
 import express, { Request, Response } from 'express';
 import { Api, statusCodes } from '@common/constants';
+import { validation } from '@gateway/middleware';
 
 export class AuthorizationRoute extends BaseRoute {
   private readonly authorizationService = new AuthorizationService();
@@ -13,7 +14,7 @@ export class AuthorizationRoute extends BaseRoute {
   }
 
   private initializeRoutes(): void {
-    this.protectedRoute('post', Api.method.role, this.createRole);
+    this.protectedRoute('post', Api.method.role, this.createRole, validation.post.role);
     this.protectedRoute('get', `${Api.method.role}/:roleCode`, this.getDetailRole);
     this.protectedRoute('get', Api.method.role, this.getAllRoles);
     this.protectedRoute('delete', `${Api.method.role}/:roleCode`, this.deleteRole);
