@@ -1,6 +1,6 @@
 import { HttpMethod, nextCatch } from '@common/index';
 import { authenticationMiddleware } from '@gateway/index';
-import { RequestValidator } from '@gateway/middleware/validation/validator/validator';
+import { RequestValidator } from '@gateway/middleware/validation/validator/requestValidator';
 import express from 'express';
 import { Request, Response } from 'express';
 

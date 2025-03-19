@@ -1,6 +1,7 @@
 import { RootRepository } from '@infrastructure/repository/rootRepository';
 import { RoleClaim } from './roleClaim.model';
 import { Transaction } from '@sequelize/core';
+import { Permission } from '@infrastructure/index';
 
 export class RoleClaimRepository extends RootRepository<RoleClaim> {
   constructor() {
@@ -14,7 +15,7 @@ export class RoleClaimRepository extends RootRepository<RoleClaim> {
   public async addClaim(
     roleCode: string,
     claimType: string,
-    claimValue: string,
+    claimValue: Permission,
     transaction?: Transaction,
   ): Promise<RoleClaim> {
     return this.create({ roleCode, claimType, claimValue }, { transaction });

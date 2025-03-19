@@ -1,7 +1,9 @@
 import {
   CreateOptions,
+  CreationAttributes,
   DestroyOptions,
   FindOptions,
+  FindOrCreateOptions,
   Model,
   ModelStatic,
   RestoreOptions,
@@ -34,6 +36,13 @@ export class RootRepository<T extends Model> {
     options?: FindOptions<T> & { transaction?: Transaction },
   ): Promise<T | null> {
     return await this.model.findOne(options);
+  }
+
+  public async findOrCreate(
+    options: FindOrCreateOptions<T> & { transaction?: Transaction },
+  ): Promise<T> {
+    const [instance] = await this.model.findOrCreate(options);
+    return instance;
   }
 
   public async create(

@@ -200,7 +200,7 @@ export class AuthenticationService {
 
     if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
 
-    return this.mfaService.generateSecret(userAccount, transaction);
+    return await this.mfaService.generateSecret(userAccount, transaction);
   }
 
   public async verifyTwoFactorSecret(

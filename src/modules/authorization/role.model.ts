@@ -11,7 +11,7 @@ import { Attribute, NotNull, Table } from '@sequelize/core/decorators-legacy';
   tableName: TableNames.Role,
   ...baseTableOptions,
   hooks: {
-    beforeUpdate(data: Role) {
+    beforeCreate(data: Role) {
       data.concurrencyStamp = new Date().getTime().toString();
     },
   },

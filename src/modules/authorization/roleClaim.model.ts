@@ -1,4 +1,5 @@
 import { TableNames } from '@common/index';
+import { Permission } from '@infrastructure/index';
 import {
   CreationOptional,
   DataTypes,
@@ -33,6 +34,6 @@ export class RoleClaim extends Model<
   @Attribute(DataTypes.STRING)
   declare claimType: string;
 
-  @Attribute(DataTypes.STRING)
-  declare claimValue: string;
+  @Attribute(DataTypes.JSON)
+  declare claimValue: Permission;
 }

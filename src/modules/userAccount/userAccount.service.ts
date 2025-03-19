@@ -11,10 +11,10 @@ import { Transaction } from '@sequelize/core';
 import { UserAccountRepository } from './userAccount.repository';
 import { CONFIG } from '@config/index';
 import { UserTokenRepository } from '@modules/tokens/userToken.repository';
-import { TokenService } from '@modules/tokens/tokens.service';
 import { UserClaimRepository } from '@modules/claims';
 import { UserRoleRepository } from '@modules/authorization/userRole.repository';
 import { RoleRepository } from '@modules/authorization';
+import speakeasy from 'speakeasy';
 
 export class UserAccountService {
   private userProfileRepository: UserProfileRepository = new UserProfileRepository();
@@ -23,7 +23,6 @@ export class UserAccountService {
   private userClaimRepository: UserClaimRepository = new UserClaimRepository();
   private userRoleRepository: UserRoleRepository = new UserRoleRepository();
   private roleRepository: RoleRepository = new RoleRepository();
-  private tokenService: TokenService = new TokenService();
 
   constructor() {}
 
@@ -160,5 +159,74 @@ export class UserAccountService {
     };
 
     return { claim, provider };
+  }
+
+  @Transactional()
+  public async createAccount(userData: any, transaction?: Transaction): Promise<any> {
+    const { email, username, role } = userData;
+    let { password } = userData;
+
+    if (!(email && password && username && password))
+      throw new BadRequestException('Please enter email, username and password');
+
+    const existingUser = await this.userAccountRepository.findByEmailOrUsername(email, username);
+
+    if (existingUser) throw new BadRequestException('Email or username has existed');
+
+    const hashedPassword = await encrypt(
+      password,
+      CONFIG.SYSTEM.ENCRYPT_SENSITIVE_SECRET_KEY!,
+      true,
+    );
+
+    const secret = speakeasy.generateSecret({
+      name: `${CONFIG.SYSTEM.APP_NAME}:${email}`,
+      length: 20,
+    });
+
+    const userAccount = await this.userAccountRepository.create(
+      {
+        email,
+        username,
+        password: hashedPassword,
+        isTwoFactorVerified: true,
+        emailConfirmed: true,
+        phoneNumberConfirmed: true,
+        twoFactorEnabled: true,
+        twoFactorSecret: secret.base32,
+        isActive: true,
+      },
+      { transaction }!,
+    );
+
+    password = '';
+    userData.password = '';
+
+    if (!userAccount) throw new BadRequestException();
+
+    const userProfile = await this.userProfileRepository.createProfileByUserAccountCode(
+      userAccount.code,
+      transaction,
+    );
+
+    const newRole = await this.roleRepository.findOrCreate({
+      where: { name: role },
+      transaction,
+    });
+    if (!newRole) throw new BadRequestException();
+
+    await this.userRoleRepository.addRoleToUser(userAccount.code, newRole.code, transaction);
+
+    await this.userClaimRepository.addClaim(
+      userAccount.code,
+      'EmailConfirmed',
+      'true',
+      transaction,
+    );
+
+    return {
+      user: userAccount.toJSON(),
+      profile: userProfile.toJSON(),
+    };
   }
 }

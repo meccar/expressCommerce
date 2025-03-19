@@ -6,6 +6,7 @@ import { Transaction } from '@sequelize/core';
 import { Role } from './role.model';
 import { BadRequestException, NotFoundException } from '@common/exceptions';
 import { Permission } from '@infrastructure/interfaces';
+import { HttpMethod, Roles } from '@common/constants';
 
 export class AuthorizationService {
   private roleRepository: RoleRepository = new RoleRepository();
@@ -15,17 +16,29 @@ export class AuthorizationService {
 
   @Transactional()
   public async createRole(
-    roleData: { name: string; permission: Permission },
+    roleData: { name: string; permissions: Permission[] },
     transaction?: Transaction,
   ): Promise<Role> {
-    const { name, permission } = roleData;
+    const { name, permissions } = roleData;
 
-    if (!name || !permission) throw new BadRequestException();
+    if (!name || !Array.isArray(permissions) || permissions.length === 0)
+      throw new BadRequestException();
 
-    const existingRole = await this.roleRepository.findByName(name);
-    if (existingRole) throw new BadRequestException();
+    const updatedPermissions =
+      name === Roles.Admin ? [{ action: '*' as any, subject: '*', fields: ['*'] }] : permissions;
 
-    return await this.roleRepository.createRole(name, transaction);
+    const role = await this.roleRepository.createRole(name, transaction);
+
+    for (const permission of updatedPermissions) {
+      await this.roleClaimRepository.addClaim(
+        role.code,
+        `${permission.action}${permission.subject}`,
+        permission,
+        transaction,
+      );
+    }
+
+    return role;
   }
 
   public async getDetailRole(roleCode: string): Promise<Role> {

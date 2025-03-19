@@ -12,9 +12,6 @@ export class RoleRepository extends RootRepository<Role> {
   }
 
   public async createRole(name: string, transaction?: Transaction): Promise<Role> {
-    return await this.create(
-      { name, concurrencyStamp: new Date().getTime().toString() },
-      { transaction },
-    );
+    return await this.create({ name }, { transaction });
   }
 }
