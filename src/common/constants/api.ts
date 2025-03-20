@@ -13,6 +13,7 @@ export const Api = {
     logout: '/logout',
     refreshToken: '/refresh',
     confirmEmail: '/verify-email',
+    resetPassword: '/recover-email',
     rotateKeys: '/rotate-keys',
     generateTwoFactorSecret: '/generate-secret',
     verifyTwoFactorSecret: '/verify-secret',

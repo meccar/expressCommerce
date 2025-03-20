@@ -18,21 +18,21 @@ export class SeedRoute extends BaseRoute {
   }
 
   private initializeRoutes(): void {
-    this.publicRoute('post', Api.method.role, this.createRole, validation.post.role);
-    this.publicRoute('post', Api.method.user, this.createAdmin, validation.post.register);
+    this.publicRoute('post', Api.method.role, this.createAdminRole, validation.post.role);
+    this.publicRoute('post', Api.method.user, this.createAdminAccount, validation.post.register);
   }
 
-  private async createRole(req: Request, res: Response): Promise<void> {
+  private async createAdminRole(req: Request, res: Response): Promise<void> {
     const roleData = req.body;
-    roleData.name = Roles.User;
+    roleData.name = Roles.Admin;
     const result = await this.authorizationService.createRole(roleData);
     res.success(result, statusCodes.CREATED);
   }
 
-  private async createAdmin(req: Request, res: Response): Promise<void> {
-    const roleData = req.body;
-    if (!roleData.role) roleData.role = Roles.Admin;
-    const result = await this.userAccountService.createAccount(roleData);
+  private async createAdminAccount(req: Request, res: Response): Promise<void> {
+    const userData = req.body;
+    if (!userData.role) userData.role = Roles.Admin;
+    const result = await this.userAccountService.createAccount(userData);
     res.success(result, statusCodes.CREATED);
   }
 }

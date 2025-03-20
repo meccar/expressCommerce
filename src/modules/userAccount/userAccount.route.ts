@@ -15,6 +15,7 @@ export class UserAccountRoute extends BaseRoute {
 
   private initializeRoutes(): void {
     this.publicRoute('post', Api.method.register, this.register, validation.post.register);
+    this.protectedRoute('post', Api.method.user, this.createAccount, validation.post.register);
   }
 
   /**
@@ -30,6 +31,13 @@ export class UserAccountRoute extends BaseRoute {
   private async register(req: Request, res: Response): Promise<void> {
     const userData = req.body;
     const result = await this.userAccountService.register(userData);
+    res.success(result, statusCodes.CREATED);
+  }
+
+  private async createAccount(req: Request, res: Response): Promise<void> {
+    const userData = req.body;
+    const user = req.user;
+    const result = await this.userAccountService.createAccount(userData, user);
     res.success(result, statusCodes.CREATED);
   }
 }

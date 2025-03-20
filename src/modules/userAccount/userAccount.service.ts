@@ -10,20 +10,19 @@ import { UserProfileRepository } from '@modules/userProfile';
 import { Transaction } from '@sequelize/core';
 import { UserAccountRepository } from './userAccount.repository';
 import { CONFIG } from '@config/index';
-import { UserTokenRepository } from '@modules/tokens/userToken.repository';
 import { UserClaimRepository } from '@modules/claims';
 import { UserRoleRepository } from '@modules/authorization/userRole.repository';
 import { RoleRepository } from '@modules/authorization';
 import speakeasy from 'speakeasy';
+import { AuthorizationService } from '@modules/authorization/authorization.service';
 
 export class UserAccountService {
   private userProfileRepository: UserProfileRepository = new UserProfileRepository();
   private userAccountRepository: UserAccountRepository = new UserAccountRepository();
-  private userTokenRepository: UserTokenRepository = new UserTokenRepository();
   private userClaimRepository: UserClaimRepository = new UserClaimRepository();
   private userRoleRepository: UserRoleRepository = new UserRoleRepository();
   private roleRepository: RoleRepository = new RoleRepository();
-
+  private authorizationService: AuthorizationService = new AuthorizationService();
   constructor() {}
 
   @Transactional()
@@ -85,86 +84,14 @@ export class UserAccountService {
   }
 
   @Transactional()
-  public async registerUser(userCode: string, email: string, roles: string[]) {}
-
-  @Transactional()
-  public async confirmEmail(
-    token: string,
-    transaction?: Transaction,
-  ): Promise<{ claim: IUserClaim; provider: IUserProvider }> {
-    const userAccount = await this.userAccountRepository.findOne({
-      where: {
-        confirmToken: token,
-      },
-    });
-
-    if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
-
-    const [affectedRows] = await this.userAccountRepository.update(
-      userAccount.code,
-      {
-        isActive: true,
-        emailConfirmed: true,
-      },
-      { transaction },
-    );
-    if (affectedRows === 0) throw new BadRequestException();
-
-    if (!userAccount.twoFactorEnabled)
-      throw new BadRequestException('Two-factor authentication required');
-
-    await this.userTokenRepository.softDelete({ value: token }, { transaction });
-    const updateEmailConfirmedClaim = await this.userClaimRepository.updateEmailConfirmedClaim(
-      userAccount.code,
-      'true',
-      transaction,
-    );
-    if (!updateEmailConfirmedClaim) throw new BadRequestException();
-
-    const roleClaim: IUserClaim = {
-      type: 'Role',
-      value: Roles.User,
-    };
-
-    const newRoleClaim = await this.userClaimRepository.addClaim(
-      userAccount.code,
-      roleClaim.type,
-      roleClaim.value,
-      transaction,
-    );
-
-    const userProvider: IUserProvider = {
-      name: 'Email Account',
-      provider: 'Email',
-      providerKey: userAccount.email,
-    };
-
-    const newUserToken = await this.userTokenRepository.addUserToken(
-      userAccount.code,
-      userProvider.provider,
-      userProvider.name!,
-      userProvider.providerKey,
-      transaction,
-    );
-
-    const claim: IUserClaim = {
-      type: newRoleClaim.claimType,
-      value: newRoleClaim.claimValue,
-    };
-
-    const provider: IUserProvider = {
-      provider: newUserToken.loginProvider,
-      providerKey: newUserToken.value,
-      name: newUserToken.name,
-    };
-
-    return { claim, provider };
-  }
-
-  @Transactional()
-  public async createAccount(userData: any, transaction?: Transaction): Promise<any> {
+  public async createAccount(userData: any, user?: any, transaction?: Transaction): Promise<any> {
     const { email, username, role } = userData;
     let { password } = userData;
+
+    if (user) {
+      const roleName = await this.authorizationService.getRoleNameByUserCode(user.code);
+      if (!roleName || roleName !== Roles.Admin) throw new UnauthorizedException();
+    }
 
     if (!(email && password && username && password))
       throw new BadRequestException('Please enter email, username and password');

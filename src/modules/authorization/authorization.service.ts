@@ -27,6 +27,9 @@ export class AuthorizationService {
     const updatedPermissions =
       name === Roles.Admin ? [{ action: '*' as any, subject: '*', fields: ['*'] }] : permissions;
 
+    const roleExist = await this.roleRepository.findByName(name);
+    if (roleExist) throw new BadRequestException();
+
     const role = await this.roleRepository.createRole(name, transaction);
 
     for (const permission of updatedPermissions) {
@@ -39,6 +42,20 @@ export class AuthorizationService {
     }
 
     return role;
+  }
+
+  public async getRoleNameByUserCode(userAccountCode: string): Promise<string | null> {
+    const role = await this.userRoleRepository.findOneByUser(userAccountCode);
+
+    if (!role) return null;
+
+    const foundRole = await this.roleRepository.findOne({
+      attributes: ['name'],
+      where: { code: role.code },
+      raw: true,
+    });
+
+    return foundRole?.name || null;
   }
 
   public async getDetailRole(roleCode: string): Promise<Role> {
@@ -85,7 +102,7 @@ export class AuthorizationService {
     const role = await this.roleRepository.findOne({
       where: { code: roleCode },
     });
-    if (!role) throw new NotFoundException('Role not found');
+    if (!role) throw new NotFoundException('Role Pnot found');
 
     await this.userRoleRepository.softDelete({ where: roleCode }, { transaction });
 

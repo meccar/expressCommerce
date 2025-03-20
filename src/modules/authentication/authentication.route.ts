@@ -16,12 +16,14 @@ export class AuthenticationRoute extends BaseRoute {
   private initializeRoutes(): void {
     this.publicRoute('post', Api.method.login, this.login);
     this.publicRoute('get', Api.method.confirmEmail, this.confirmEmail);
+    this.publicRoute('post', Api.method.resetPassword, this.resetPassword);
     this.publicRoute('post', Api.method.generateTwoFactorSecret, this.generateTwoFactorSecret);
     this.publicRoute('post', Api.method.validateTwoFactorSecret, this.validateTwoFactorSecret);
     this.protectedRoute('post', Api.method.logout, this.logout);
     this.protectedRoute('post', Api.method.refreshToken, this.refreshToken);
     this.protectedRoute('post', Api.method.verifyTwoFactorSecret, this.verifyTwoFactorSecret);
     this.protectedRoute('post', Api.method.disableTwoFactorSecret, this.disableTwoFactorSecret);
+    
   }
 
   /**
@@ -80,6 +82,12 @@ export class AuthenticationRoute extends BaseRoute {
   private async confirmEmail(req: Request, res: Response): Promise<void> {
     const confirmEmailData = req.query;
     const result = await this.authenticationService.confirmEmail(confirmEmailData);
+    res.success(result, statusCodes.OK);
+  }
+
+  private async resetPassword(req: Request, res: Response): Promise<void> {
+    const resetPasswordData = req.query;
+    const result = await this.authenticationService.resetPassword(resetPasswordData);
     res.success(result, statusCodes.OK);
   }
 

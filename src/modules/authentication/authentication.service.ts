@@ -5,13 +5,22 @@ import {
   BadRequestException,
   compare,
   NotFoundException,
+  Roles,
   Transactional,
+  Ulid,
   UnauthorizedException,
 } from '@common/index';
 import { Transaction } from '@sequelize/core';
 import { UserAccount, UserAccountRepository, UserAccountService } from '@modules/userAccount';
 import { UserLogin } from './userLogin.model';
-import { JwtAccessPayload, SignInOptions, SignInResult } from '@infrastructure/index';
+import {
+  IUserClaim,
+  IUserProvider,
+  JwtAccessPayload,
+  mailService,
+  SignInOptions,
+  SignInResult,
+} from '@infrastructure/index';
 import { UserLoginRepository } from './userLogin.repository';
 import { TokenService } from '@modules/tokens/tokens.service';
 import { MfaService } from '@modules/mfa/mfa.service';
@@ -114,10 +123,15 @@ export class AuthenticationService {
     if (!existingUser)
       throw new UnauthorizedException('Either email, username or password is incorrect');
 
-    const signInResult = await this.passwordSignInAsync(existingUser, password, {
-      lockoutOnFailure,
-      requireConfirmed,
-    });
+    const signInResult = await this.passwordSignInAsync(
+      existingUser,
+      password,
+      {
+        lockoutOnFailure,
+        requireConfirmed,
+      },
+      transaction,
+    );
 
     if (!signInResult.succeeded) throw new UnauthorizedException(signInResult.message);
 
@@ -160,16 +174,6 @@ export class AuthenticationService {
     if (!storedToken) throw new UnauthorizedException();
 
     return { message: 'Logged out successfully' };
-  }
-
-  @Transactional()
-  public async confirmEmail(confirmEmailData: any, transaction?: Transaction): Promise<any> {
-    const { token } = confirmEmailData;
-    if (!token) throw new UnauthorizedException();
-
-    await this.userAccountService.confirmEmail(token, transaction);
-
-    return { message: 'Email verified successfully' };
   }
 
   @Transactional()
@@ -234,10 +238,107 @@ export class AuthenticationService {
     return this.mfaService.disableSecret(data, user, transaction);
   }
 
+  @Transactional()
+  public async confirmEmail(confirmEmailData: any, transaction?: Transaction): Promise<any> {
+    const { token } = confirmEmailData;
+    if (!token) throw new UnauthorizedException();
+
+    const userAccount = await this.userAccountRepository.findOne({
+      where: {
+        confirmToken: token,
+      },
+    });
+
+    if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
+
+    const [affectedRows] = await this.userAccountRepository.update(
+      userAccount.code,
+      {
+        isActive: true,
+        emailConfirmed: true,
+      },
+      { transaction },
+    );
+    if (affectedRows === 0) throw new BadRequestException();
+
+    if (!userAccount.twoFactorEnabled)
+      throw new BadRequestException('Two-factor authentication required');
+
+    await this.userTokenRepository.softDelete({ value: token }, { transaction });
+    const updateEmailConfirmedClaim = await this.userClaimRepository.updateEmailConfirmedClaim(
+      userAccount.code,
+      'true',
+      transaction,
+    );
+    if (!updateEmailConfirmedClaim) throw new BadRequestException();
+
+    const roleClaim: IUserClaim = {
+      type: 'Role',
+      value: Roles.User,
+    };
+
+    const newRoleClaim = await this.userClaimRepository.addClaim(
+      userAccount.code,
+      roleClaim.type,
+      roleClaim.value,
+      transaction,
+    );
+
+    const userProvider: IUserProvider = {
+      name: 'Email Account',
+      provider: 'Email',
+      providerKey: userAccount.email,
+    };
+
+    const newUserToken = await this.userTokenRepository.addUserToken(
+      userAccount.code,
+      userProvider.provider,
+      userProvider.name!,
+      userProvider.providerKey,
+      transaction,
+    );
+
+    const claim: IUserClaim = {
+      type: newRoleClaim.claimType,
+      value: newRoleClaim.claimValue,
+    };
+
+    const provider: IUserProvider = {
+      provider: newUserToken.loginProvider,
+      providerKey: newUserToken.value,
+      name: newUserToken.name,
+    };
+
+    return { message: 'Email verified successfully' };
+  }
+
+  @Transactional()
+  public async resetPassword(resetPasswordData: any, transaction?: Transaction): Promise<any> {
+    const { email } = resetPasswordData;
+    const userAccount = await this.userAccountRepository.findOne({
+      where: {
+        email,
+      },
+    });
+
+    if (!userAccount) throw new UnauthorizedException();
+
+    userAccount.passwordRecoveryToken = Ulid.generateUlid();
+    await userAccount.save({ transaction });
+
+    const RecoveryUrl = `${CONFIG.SYSTEM.FRONTEND_URL}/recover-email?token=${userAccount.confirmToken}`;
+
+    await mailService.send(email, 'Reset password', 'email-recovery', {
+      username: userAccount.username ?? email,
+      RecoveryUrl,
+    });
+  }
+
   private async passwordSignInAsync(
     user: UserAccount,
     password: string,
     options: SignInOptions = {},
+    transaction?: Transaction,
   ): Promise<SignInResult> {
     const { lockoutOnFailure = true, requireConfirmed = true } = options;
 
@@ -272,7 +373,7 @@ export class AuthenticationService {
           user.lockoutEnd = lockoutEnd;
         }
 
-        await user.save();
+        await user.save({ transaction });
       }
 
       return { succeeded: false, message: 'Invalid login attempt' };
@@ -281,7 +382,7 @@ export class AuthenticationService {
     if (user.accessFailedCount > 0) {
       user.accessFailedCount = 0;
       user.lockoutEnd = null;
-      await user.save();
+      await user.save({ transaction });
     }
 
     if (!user.twoFactorEnabled)
@@ -291,7 +392,7 @@ export class AuthenticationService {
         message: 'Two-factor authentication required',
       };
 
-    await user.save();
+    await user.save({ transaction });
     return { succeeded: true };
   }
 

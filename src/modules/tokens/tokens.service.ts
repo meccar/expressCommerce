@@ -1,4 +1,4 @@
-import { Transactional, UnauthorizedException } from '@common/index';
+import { Transactional, Ulid, UnauthorizedException } from '@common/index';
 import { CONFIG } from '@config/index';
 import { JwtAccessPayload, JwtRefreshPayload } from '@infrastructure/index';
 import { UserToken } from '@modules/authentication';
@@ -10,7 +10,6 @@ import { Transaction } from '@sequelize/core';
 import { Secret } from 'jsonwebtoken';
 import type { Algorithm, SignOptions } from 'jsonwebtoken';
 import * as jwt from 'jsonwebtoken';
-import { ulid } from 'ulid';
 
 export class TokenService {
   private userTokenRepository: UserTokenRepository = new UserTokenRepository();
@@ -129,14 +128,14 @@ export class TokenService {
             providerKey: login.providerKey,
           }))
         : [],
-      jti: ulid(),
+      jti: Ulid.generateUlid(),
     };
 
     const refreshPayload: JwtRefreshPayload = {
       code: user.code,
       username: user.username || '',
       tokenType: 'refresh',
-      jti: ulid(),
+      jti: Ulid.generateUlid(),
     };
 
     const algorithm: Algorithm = 'HS256';
