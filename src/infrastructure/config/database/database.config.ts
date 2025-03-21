@@ -55,6 +55,8 @@ export const dbConfig: Options<MySqlDialect> = {
   models: models,
   define: {
     underscored: true,
+    paranoid: true,
+    timestamps: true,
   },
 };
 

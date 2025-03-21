@@ -4,6 +4,7 @@ import { CONFIG } from '@config/index';
 import {
   BadRequestException,
   compare,
+  encrypt,
   NotFoundException,
   Roles,
   Transactional,
@@ -11,7 +12,7 @@ import {
   UnauthorizedException,
 } from '@common/index';
 import { Transaction } from '@sequelize/core';
-import { UserAccount, UserAccountRepository, UserAccountService } from '@modules/userAccount';
+import { UserAccount, UserAccountRepository } from '@modules/userAccount';
 import { UserLogin } from './userLogin.model';
 import {
   IUserClaim,
@@ -37,7 +38,6 @@ export class AuthenticationService {
   private userTokenRepository: UserTokenRepository = new UserTokenRepository();
   private tokenService: TokenService = new TokenService();
   private mfaService: MfaService = new MfaService();
-  private userAccountService: UserAccountService = new UserAccountService();
 
   constructor() {}
 
@@ -192,8 +192,7 @@ export class AuthenticationService {
     };
   }
 
-  public async generateTwoFactorSecret(mfaData: any, transaction?: Transaction): Promise<any> {
-    const { token } = mfaData;
+  public async generateTwoFactorSecret(token: string, transaction?: Transaction): Promise<any> {
     if (!token) throw new UnauthorizedException();
 
     const userAccount = await this.userAccountRepository.findOne({
@@ -239,32 +238,26 @@ export class AuthenticationService {
   }
 
   @Transactional()
-  public async confirmEmail(confirmEmailData: any, transaction?: Transaction): Promise<any> {
-    const { token } = confirmEmailData;
+  public async confirmEmail(token: string, transaction?: Transaction): Promise<any> {
     if (!token) throw new UnauthorizedException();
 
-    const userAccount = await this.userAccountRepository.findOne({
-      where: {
-        confirmToken: token,
-      },
-    });
+    const userAccount = await this.userAccountRepository.findUserByToken(token);
 
     if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
 
-    const [affectedRows] = await this.userAccountRepository.update(
-      userAccount.code,
+    const updatedUserAccount = await this.userAccountRepository.update(
+      userAccount,
       {
         isActive: true,
         emailConfirmed: true,
       },
       { transaction },
     );
-    if (affectedRows === 0) throw new BadRequestException();
+    if (!updatedUserAccount) throw new BadRequestException();
 
     if (!userAccount.twoFactorEnabled)
       throw new BadRequestException('Two-factor authentication required');
 
-    await this.userTokenRepository.softDelete({ value: token }, { transaction });
     const updateEmailConfirmedClaim = await this.userClaimRepository.updateEmailConfirmedClaim(
       userAccount.code,
       'true',
@@ -277,7 +270,7 @@ export class AuthenticationService {
       value: Roles.User,
     };
 
-    const newRoleClaim = await this.userClaimRepository.addClaim(
+    await this.userClaimRepository.addClaim(
       userAccount.code,
       roleClaim.type,
       roleClaim.value,
@@ -290,7 +283,7 @@ export class AuthenticationService {
       providerKey: userAccount.email,
     };
 
-    const newUserToken = await this.userTokenRepository.addUserToken(
+    await this.userTokenRepository.addUserToken(
       userAccount.code,
       userProvider.provider,
       userProvider.name!,
@@ -298,23 +291,11 @@ export class AuthenticationService {
       transaction,
     );
 
-    const claim: IUserClaim = {
-      type: newRoleClaim.claimType,
-      value: newRoleClaim.claimValue,
-    };
-
-    const provider: IUserProvider = {
-      provider: newUserToken.loginProvider,
-      providerKey: newUserToken.value,
-      name: newUserToken.name,
-    };
-
     return { message: 'Email verified successfully' };
   }
 
   @Transactional()
-  public async resetPassword(resetPasswordData: any, transaction?: Transaction): Promise<any> {
-    const { email } = resetPasswordData;
+  public async resetPasswordRequest(email: string, transaction?: Transaction): Promise<any> {
     const userAccount = await this.userAccountRepository.findOne({
       where: {
         email,
@@ -323,8 +304,15 @@ export class AuthenticationService {
 
     if (!userAccount) throw new UnauthorizedException();
 
-    userAccount.passwordRecoveryToken = Ulid.generateUlid();
-    await userAccount.save({ transaction });
+    const updatedUserAccount = await this.userAccountRepository.update(
+      userAccount,
+      {
+        passwordRecoveryToken: Ulid.generateUlid(),
+      },
+      { transaction },
+    );
+
+    if (!updatedUserAccount) throw new BadRequestException();
 
     const RecoveryUrl = `${CONFIG.SYSTEM.FRONTEND_URL}/recover-email?token=${userAccount.confirmToken}`;
 
@@ -332,6 +320,49 @@ export class AuthenticationService {
       username: userAccount.username ?? email,
       RecoveryUrl,
     });
+  }
+
+  @Transactional()
+  public async resetPassword(
+    resetPasswordData: any,
+    token: string,
+    transaction?: Transaction,
+  ): Promise<any> {
+    let { password } = resetPasswordData;
+
+    if (!token) throw new UnauthorizedException();
+
+    const userAccount = await this.userAccountRepository.findUserByToken(token);
+
+    if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
+
+    const hashedPassword = await encrypt(
+      password,
+      CONFIG.SYSTEM.ENCRYPT_SENSITIVE_SECRET_KEY!,
+      true,
+    );
+
+    const updatedUserAccount = await this.userAccountRepository.update(
+      userAccount,
+      {
+        password: hashedPassword,
+        passwordRecoveryToken: null,
+      },
+      { transaction },
+    );
+
+    if (!updatedUserAccount) throw new BadRequestException();
+
+    password = '';
+    resetPasswordData.password = '';
+  }
+
+  public async verifyToken(token: string): Promise<boolean> {
+    const userAccount = await this.userAccountRepository.findUserByToken(token);
+
+    if (!userAccount) throw new UnauthorizedException();
+
+    return true;
   }
 
   private async passwordSignInAsync(
@@ -365,24 +396,36 @@ export class AuthenticationService {
 
     if (!isPasswordValid) {
       if (lockoutOnFailure) {
-        user.accessFailedCount = (user.accessFailedCount || 0) + 1;
+        const accessFailedCount = (user.accessFailedCount || 0) + 1;
+        const updates: Partial<UserAccount> = { accessFailedCount };
 
-        if (user.accessFailedCount >= this.MAX_FAILED_ATTEMPTS) {
+        if (accessFailedCount >= this.MAX_FAILED_ATTEMPTS) {
           const lockoutEnd = new Date();
           lockoutEnd.setMinutes(lockoutEnd.getMinutes() + this.DEFAULT_LOCKOUT_MINUTES);
           user.lockoutEnd = lockoutEnd;
         }
 
-        await user.save({ transaction });
+        const updatedUserAccount = await this.userAccountRepository.update(user, updates, {
+          transaction,
+        });
+
+        if (!updatedUserAccount) throw new BadRequestException();
       }
 
       return { succeeded: false, message: 'Invalid login attempt' };
     }
 
     if (user.accessFailedCount > 0) {
-      user.accessFailedCount = 0;
-      user.lockoutEnd = null;
-      await user.save({ transaction });
+      const updatedUserAccount = await this.userAccountRepository.update(
+        user,
+        {
+          accessFailedCount: 0,
+          lockoutEnd: null,
+        },
+        { transaction },
+      );
+
+      if (!updatedUserAccount) throw new BadRequestException();
     }
 
     if (!user.twoFactorEnabled)
@@ -392,7 +435,6 @@ export class AuthenticationService {
         message: 'Two-factor authentication required',
       };
 
-    await user.save({ transaction });
     return { succeeded: true };
   }
 

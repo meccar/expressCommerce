@@ -1,4 +1,4 @@
-import { TableNames } from '@common/index';
+import { BaseModel, TableNames } from '@common/index';
 import { Permission } from '@infrastructure/index';
 import {
   CreationOptional,
@@ -18,15 +18,10 @@ import {
 @Table({
   tableName: TableNames.RoleClaim,
 })
-export class RoleClaim extends Model<
+export class RoleClaim extends BaseModel<
   InferAttributes<RoleClaim>,
   InferCreationAttributes<RoleClaim>
 > {
-  @Attribute(DataTypes.INTEGER)
-  @PrimaryKey
-  @AutoIncrement
-  declare id: CreationOptional<number>;
-
   @NotNull
   @Attribute(DataTypes.UUID.V1)
   declare roleCode: string;

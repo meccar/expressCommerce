@@ -18,21 +18,26 @@ export class SeedRoute extends BaseRoute {
   }
 
   private initializeRoutes(): void {
-    this.publicRoute('post', Api.method.role, this.createAdminRole, validation.post.role);
-    this.publicRoute('post', Api.method.user, this.createAdminAccount, validation.post.register);
+    this.publicRoute('post', Api.method.role, this.createBaseRole);
+    this.publicRoute('post', Api.method.user, this.createAdminAccount);
   }
 
-  private async createAdminRole(req: Request, res: Response): Promise<void> {
-    const roleData = req.body;
-    roleData.name = Roles.Admin;
-    const result = await this.authorizationService.createRole(roleData);
-    res.success(result, statusCodes.CREATED);
+  private async createBaseRole(req: Request, res: Response): Promise<void> {
+    const roleDataAdmin = { ...req.body, name: Roles.Admin };
+    const roleDataUser = { ...req.body, name: Roles.User };
+
+    const [adminRole, userRole] = await Promise.all([
+      this.authorizationService.createRole(roleDataAdmin),
+      this.authorizationService.createRole(roleDataUser),
+    ]);
+
+    res.success({ adminRole, userRole }, statusCodes.CREATED);
   }
 
   private async createAdminAccount(req: Request, res: Response): Promise<void> {
     const userData = req.body;
     if (!userData.role) userData.role = Roles.Admin;
-    const result = await this.userAccountService.createAccount(userData);
+    const result = await this.userAccountService.createAccount(userData, undefined);
     res.success(result, statusCodes.CREATED);
   }
 }

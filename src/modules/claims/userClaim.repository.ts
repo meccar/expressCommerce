@@ -26,18 +26,8 @@ export class UserClaimRepository extends RootRepository<UserClaim> {
     const claim = await this.getDetailClaim(userAccountCode, 'EmailConfirmed');
 
     if (!claim) return null;
-    
-    return await claim.update({ claimValue }, { transaction });
-  }
 
-  public async updateClaim(
-    userAccountCode: string,
-    claim: UserClaim,
-    transaction?: Transaction,
-  ): Promise<[number]> {
-    return await this.update(userAccountCode, claim, {
-      transaction,
-    });
+    return await this.update(claim, { claimValue }, { transaction });
   }
 
   public async addClaim(

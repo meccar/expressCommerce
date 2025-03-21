@@ -4,7 +4,7 @@ import { Attribute, NotNull, Table } from '@sequelize/core/decorators-legacy';
 
 @Table({
   tableName: TableNames.UserRole,
-  ...baseTableOptions,
+  // ...baseTableOptions,
 })
 export class UserRole extends BaseModel<
   InferAttributes<UserRole>,

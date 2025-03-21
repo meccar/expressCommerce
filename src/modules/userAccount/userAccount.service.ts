@@ -4,6 +4,7 @@ import {
   encrypt,
   Roles,
   Transactional,
+  Ulid,
   UnauthorizedException,
 } from '@common/index';
 import { UserProfileRepository } from '@modules/userProfile';

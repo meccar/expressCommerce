@@ -4,7 +4,7 @@ import { AllowNull, Attribute, Default, NotNull, Table } from '@sequelize/core/d
 
 @Table({
   tableName: TableNames.UserProfile,
-  ...baseTableOptions,
+  // ...baseTableOptions,
   comment: 'Stores user profile information',
 })
 export class UserProfile extends BaseModel<

@@ -20,34 +20,40 @@ export abstract class BaseRoute {
     method: HttpMethod,
     path: string,
     handler: RouteHandler,
-    validator?: RequestValidator,
+    // validator?: RequestValidator,
   ): void {
-    validator
-      ? this.router[method](
-          `${this.basePath}${path}`,
-          authenticationMiddleware(),
-          validator.middleware(),
-          this.errorHandler(handler),
-        )
-      : this.router[method](
-          `${this.basePath}${path}`,
-          authenticationMiddleware(),
-          this.errorHandler(handler),
-        );
+    this.router[method](
+      `${this.basePath}${path}`,
+      authenticationMiddleware(),
+      this.errorHandler(handler),
+    );
+    // validator
+    //   ? this.router[method](
+    //       `${this.basePath}${path}`,
+    //       authenticationMiddleware(),
+    //       validator.middleware(),
+    //       this.errorHandler(handler),
+    //     )
+    //   : this.router[method](
+    //       `${this.basePath}${path}`,
+    //       authenticationMiddleware(),
+    //       this.errorHandler(handler),
+    //     );
   }
 
   protected publicRoute(
     method: HttpMethod,
     path: string,
     handler: RouteHandler,
-    validator?: RequestValidator,
+    // validator?: RequestValidator,
   ): void {
-    validator
-      ? this.router[method](
-          `${this.basePath}${path}`,
-          validator.middleware(),
-          this.errorHandler(handler),
-        )
-      : this.router[method](`${this.basePath}${path}`, this.errorHandler(handler));
+    this.router[method](`${this.basePath}${path}`, this.errorHandler(handler));
+    // validator
+    //   ? this.router[method](
+    //       `${this.basePath}${path}`,
+    //       validator.middleware(),
+    //       this.errorHandler(handler),
+    //     )
+    //   : this.router[method](`${this.basePath}${path}`, this.errorHandler(handler));
   }
 }

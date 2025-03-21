@@ -4,7 +4,7 @@ import { AllowNull, Attribute, Table } from '@sequelize/core/decorators-legacy';
 
 @Table({
 tableName: TableNames.UserToken,
-  ...baseTableOptions,
+  // ...baseTableOptions,
 })
 export class UserToken extends BaseModel<
   InferAttributes<UserToken>,

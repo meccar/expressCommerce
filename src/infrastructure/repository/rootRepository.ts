@@ -53,14 +53,27 @@ export class RootRepository<T extends Model> {
   }
 
   public async update(
-    code: number | string,
+    currentRecord: T,
     data: Partial<T>,
-    options?: Omit<UpdateOptions<T>, 'where'> & { transaction?: Transaction },
-  ): Promise<[number]> {
-    return await this.model.update(data as any, {
-      where: { code } as any,
-      ...options,
+    options?: Omit<CreateOptions<T>, 'where'> & { transaction?: Transaction },
+  ): Promise<T> {
+    const currentData = currentRecord.toJSON();
+
+    const newRecord = await this.create(
+      {
+        ...currentData,
+        ...data,
+        version: (currentData.version || 0) + 1,
+        id: undefined,
+      },
+      options,
+    );
+
+    await currentRecord.destroy({
+      transaction: options?.transaction,
     });
+
+    return newRecord;
   }
 
   public async softDelete(

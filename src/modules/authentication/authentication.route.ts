@@ -17,13 +17,14 @@ export class AuthenticationRoute extends BaseRoute {
     this.publicRoute('post', Api.method.login, this.login);
     this.publicRoute('get', Api.method.confirmEmail, this.confirmEmail);
     this.publicRoute('post', Api.method.resetPassword, this.resetPassword);
+    this.publicRoute('post', Api.method.requestResetPassword, this.resetPasswordRequest);
+    this.publicRoute('get', Api.method.verifyToken, this.verifyToken);
     this.publicRoute('post', Api.method.generateTwoFactorSecret, this.generateTwoFactorSecret);
     this.publicRoute('post', Api.method.validateTwoFactorSecret, this.validateTwoFactorSecret);
     this.protectedRoute('post', Api.method.logout, this.logout);
     this.protectedRoute('post', Api.method.refreshToken, this.refreshToken);
     this.protectedRoute('post', Api.method.verifyTwoFactorSecret, this.verifyTwoFactorSecret);
     this.protectedRoute('post', Api.method.disableTwoFactorSecret, this.disableTwoFactorSecret);
-    
   }
 
   /**
@@ -80,20 +81,33 @@ export class AuthenticationRoute extends BaseRoute {
   }
 
   private async confirmEmail(req: Request, res: Response): Promise<void> {
-    const confirmEmailData = req.query;
-    const result = await this.authenticationService.confirmEmail(confirmEmailData);
+    const token = req.query.token as string;
+    const result = await this.authenticationService.confirmEmail(token);
+    res.success(result, statusCodes.OK);
+  }
+
+  private async resetPasswordRequest(req: Request, res: Response): Promise<void> {
+    const email = req.query.email as string;
+    const result = await this.authenticationService.resetPasswordRequest(email);
     res.success(result, statusCodes.OK);
   }
 
   private async resetPassword(req: Request, res: Response): Promise<void> {
-    const resetPasswordData = req.query;
-    const result = await this.authenticationService.resetPassword(resetPasswordData);
+    const token = req.query.token as string;
+    const resetPasswordData = req.body;
+    const result = await this.authenticationService.resetPassword(resetPasswordData, token);
+    res.success(result, statusCodes.OK);
+  }
+
+  private async verifyToken(req: Request, res: Response): Promise<void> {
+    const token = req.query.token as string;
+    const result = await this.authenticationService.verifyToken(token);
     res.success(result, statusCodes.OK);
   }
 
   private async generateTwoFactorSecret(req: Request, res: Response): Promise<void> {
-    const mfaData = req.query;
-    const result = await this.authenticationService.generateTwoFactorSecret(mfaData);
+    const token = req.query.token as string;
+    const result = await this.authenticationService.generateTwoFactorSecret(token);
     res.success(result, statusCodes.CREATED);
   }
 

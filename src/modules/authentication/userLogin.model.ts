@@ -1,11 +1,11 @@
-import { TableNames } from '@common/index';
+import { BaseModel, TableNames } from '@common/index';
 import { DataTypes, InferAttributes, InferCreationAttributes, Model } from '@sequelize/core';
 import { Attribute, PrimaryKey, Table } from '@sequelize/core/decorators-legacy';
 
 @Table({
   tableName: TableNames.UserLogin,
 })
-export class UserLogin extends Model<
+export class UserLogin extends BaseModel<
   InferAttributes<UserLogin>,
   InferCreationAttributes<UserLogin>
 > {
@@ -19,6 +19,5 @@ export class UserLogin extends Model<
   declare providerDisplayName: string;
 
   @Attribute(DataTypes.UUID.V1)
-  @PrimaryKey
   declare userAccountCode: string;
 }

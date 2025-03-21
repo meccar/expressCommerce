@@ -9,7 +9,7 @@ import { Attribute, NotNull, Table } from '@sequelize/core/decorators-legacy';
 
 @Table({
   tableName: TableNames.Role,
-  ...baseTableOptions,
+  // ...baseTableOptions,
   hooks: {
     beforeCreate(data: Role) {
       data.concurrencyStamp = new Date().getTime().toString();

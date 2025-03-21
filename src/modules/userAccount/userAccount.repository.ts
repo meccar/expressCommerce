@@ -24,4 +24,12 @@ export class UserAccountRepository extends RootRepository<UserAccount> {
       },
     });
   }
+
+  public async findUserByToken(token: string): Promise<UserAccount | null> {
+    return await this.findOne({
+      where: {
+        [Op.or]: [{ confirmToken: token }, { passwordRecoveryToken: token }],
+      },
+    });
+  }
 }

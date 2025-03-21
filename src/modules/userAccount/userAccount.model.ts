@@ -1,4 +1,4 @@
-import { TableNames, Ulid } from '@common/index';
+import { BaseModel, TableNames, Ulid } from '@common/index';
 import {
   CreationOptional,
   DataTypes,
@@ -30,16 +30,10 @@ import { IsDecimal, IsEmail, NotEmpty } from '@sequelize/validator.js';
     },
   },
 })
-export class UserAccount extends Model<
+export class UserAccount extends BaseModel<
   InferAttributes<UserAccount>,
   InferCreationAttributes<UserAccount>
 > {
-  @Index
-  @PrimaryKey
-  @Attribute(DataTypes.UUID.V1)
-  @Default(sql.uuidV1)
-  declare code: CreationOptional<string>;
-
   @Attribute(DataTypes.STRING(255))
   @IsEmail({ msg: 'Please enter a valid email' })
   @NotEmpty({ msg: 'Please enter your email' })
@@ -49,16 +43,17 @@ export class UserAccount extends Model<
   @NotEmpty({ msg: 'Please enter your username' })
   declare username: string;
 
-  @NotNull
   @Attribute(DataTypes.STRING(255))
+  @NotNull
   @NotEmpty({ msg: 'Please enter your password' })
   declare password: string;
 
   @Attribute(DataTypes.STRING(100))
-  declare passwordRecoveryToken: string;
+  @AllowNull
+  declare passwordRecoveryToken: string | null;
 
   @Attribute(DataTypes.STRING(100))
-  declare confirmToken: string;
+  declare confirmToken: string | null;
 
   @Attribute(DataTypes.BOOLEAN)
   @Default(false)

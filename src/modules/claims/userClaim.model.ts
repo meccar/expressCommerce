@@ -1,4 +1,4 @@
-import { TableNames } from '@common/index';
+import { BaseModel, TableNames } from '@common/index';
 import {
   CreationOptional,
   DataTypes,
@@ -17,15 +17,10 @@ import {
 @Table({
   tableName: TableNames.UserClaim,
 })
-export class UserClaim extends Model<
+export class UserClaim extends BaseModel<
   InferAttributes<UserClaim>,
   InferCreationAttributes<UserClaim>
 > {
-  @Attribute(DataTypes.INTEGER)
-  @PrimaryKey
-  @AutoIncrement
-  declare id: CreationOptional<number>;
-
   @NotNull
   @Attribute(DataTypes.UUID.V1)
   declare userAccountCode: string;

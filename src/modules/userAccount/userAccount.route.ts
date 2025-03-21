@@ -14,8 +14,8 @@ export class UserAccountRoute extends BaseRoute {
   }
 
   private initializeRoutes(): void {
-    this.publicRoute('post', Api.method.register, this.register, validation.post.register);
-    this.protectedRoute('post', Api.method.user, this.createAccount, validation.post.register);
+    this.publicRoute('post', Api.method.register, this.register);
+    this.protectedRoute('post', Api.method.user, this.createAccount);
   }
 
   /**
