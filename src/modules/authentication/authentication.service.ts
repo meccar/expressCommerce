@@ -241,6 +241,9 @@ export class AuthenticationService {
   public async confirmEmail(token: string, transaction?: Transaction): Promise<any> {
     if (!token) throw new UnauthorizedException();
 
+    const isTokenExpired = await Ulid.isExpired(token, CONFIG.SYSTEM.EMAIL_TOKEN_EXPIRYL);
+    if (isTokenExpired) throw new UnauthorizedException('Invalid or expired verification token');
+
     const userAccount = await this.userAccountRepository.findUserByToken(token);
 
     if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
@@ -331,6 +334,8 @@ export class AuthenticationService {
     let { password } = resetPasswordData;
 
     if (!token) throw new UnauthorizedException();
+    const isTokenExpired = await Ulid.isExpired(token, CONFIG.SYSTEM.REFRESH_PASSWORD_TOKEN_EXPIRY);
+    if (isTokenExpired) throw new UnauthorizedException('Invalid or expired verification token');
 
     const userAccount = await this.userAccountRepository.findUserByToken(token);
 

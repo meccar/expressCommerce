@@ -1,4 +1,4 @@
-import { BaseModel, baseTableOptions, TableNames } from '@common/index';
+import { BaseModel, TableNames } from '@common/index';
 import {
   CreationOptional,
   DataTypes,
@@ -9,7 +9,6 @@ import { Attribute, NotNull, Table } from '@sequelize/core/decorators-legacy';
 
 @Table({
   tableName: TableNames.Role,
-  // ...baseTableOptions,
   hooks: {
     beforeCreate(data: Role) {
       data.concurrencyStamp = new Date().getTime().toString();

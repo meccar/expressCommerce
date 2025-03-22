@@ -35,7 +35,9 @@ export class AuthorizationService {
     for (const permission of updatedPermissions) {
       await this.roleClaimRepository.addClaim(
         role.code,
-        `${permission.action}${permission.subject}`,
+        permission.action === permission.subject
+          ? `${permission.action}`
+          : `${permission.action}${permission.subject}`,
         permission,
         transaction,
       );

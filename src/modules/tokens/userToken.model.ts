@@ -1,10 +1,9 @@
-import { BaseModel, baseTableOptions, TableNames } from '@common/index';
+import { BaseModel, TableNames } from '@common/index';
 import { DataTypes, InferAttributes, InferCreationAttributes, Model } from '@sequelize/core';
 import { AllowNull, Attribute, Table } from '@sequelize/core/decorators-legacy';
 
 @Table({
 tableName: TableNames.UserToken,
-  // ...baseTableOptions,
 })
 export class UserToken extends BaseModel<
   InferAttributes<UserToken>,
