@@ -14,11 +14,11 @@ export class AuthorizationRoute extends BaseRoute {
   }
 
   private initializeRoutes(): void {
-    this.protectedRoute('post', Api.method.role, this.createRole, validation.post.role);
-    this.protectedRoute('get', `${Api.method.role}/:roleCode`, this.getDetailRole);
-    this.protectedRoute('get', Api.method.role, this.getAllRoles);
-    this.protectedRoute('delete', `${Api.method.role}/:roleCode`, this.deleteRole);
-    this.protectedRoute('put', `${Api.method.role}/:roleCode`, this.updateRole);
+    this.protectedRoute('post', this.createRole, Api.method.role);
+    this.protectedRoute('get', this.getDetailRole, `${Api.method.role}/:roleCode`);
+    this.protectedRoute('get', this.getAllRoles, Api.method.role);
+    this.protectedRoute('delete', this.deleteRole, `${Api.method.role}/:roleCode`);
+    this.protectedRoute('put', this.updateRole, `${Api.method.role}/:roleCode`);
   }
 
   /**

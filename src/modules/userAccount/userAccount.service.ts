@@ -28,10 +28,10 @@ export class UserAccountService {
 
   @Transactional()
   public async register(userData: any, transaction?: Transaction): Promise<any> {
-    const { email, username } = userData;
-    let { password } = userData;
+    const { email, username } = userData || {};
+    let { password } = userData || {};
 
-    if (!(email && password && username && password))
+    if (!email?.trim() || !username?.trim() || !password?.trim())
       throw new BadRequestException('Please enter email, username and password');
 
     const existingUser = await this.userAccountRepository.findByEmailOrUsername(email, username);
@@ -86,15 +86,15 @@ export class UserAccountService {
 
   @Transactional()
   public async createAccount(userData: any, user?: any, transaction?: Transaction): Promise<any> {
-    const { email, username, role } = userData;
-    let { password } = userData;
+    const { email, username, role } = userData || {};
+    let { password } = userData || {};
 
     if (user) {
       const roleName = await this.authorizationService.getRoleNameByUserCode(user.code);
       if (!roleName || roleName !== Roles.Admin) throw new UnauthorizedException();
     }
 
-    if (!(email && password && username && password))
+    if (!email?.trim() || !username?.trim() || !password?.trim())
       throw new BadRequestException('Please enter email, username and password');
 
     const existingUser = await this.userAccountRepository.findByEmailOrUsername(email, username);

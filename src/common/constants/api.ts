@@ -6,6 +6,7 @@ export const Api = {
     admin: '/admin',
     mfa: '/mfa',
     seed: '/seed',
+    profile: '/profile',
   },
   method: {
     register: '/register',
@@ -22,7 +23,7 @@ export const Api = {
     validateTwoFactorSecret: '/validate-secret',
     disableTwoFactorSecret: '/disable-secret',
     role: '/role',
-    user: '/user',
+    user: '/create-user',
   },
 } as const;
 

@@ -113,9 +113,9 @@ export class AuthenticationService {
   @Transactional()
   public async login(loginData: any, transaction?: Transaction): Promise<any> {
     const { email, username, password, isPersistent, lockoutOnFailure, requireConfirmed } =
-      loginData;
+      loginData || {};
 
-    if (!((email || username) && password))
+    if (!email?.trim() || !username?.trim() || !password?.trim())
       throw new BadRequestException('Please enter email, username and password');
 
     const existingUser = await this.userAccountRepository.findByEmailOrUsername(email, username);
@@ -156,9 +156,9 @@ export class AuthenticationService {
 
   @Transactional()
   public async logout(logoutData: any, user: any, transaction?: Transaction): Promise<any> {
-    const { refreshToken } = logoutData;
+    const { refreshToken } = logoutData || {};
 
-    if (!user || !refreshToken) throw new UnauthorizedException();
+    if (!user || !refreshToken?.trim()) throw new UnauthorizedException();
 
     const decoded = this.tokenService.verifyRefreshToken(refreshToken);
 
@@ -178,9 +178,9 @@ export class AuthenticationService {
 
   @Transactional()
   public async refreshToken(refreshTokenData: any, transaction?: Transaction): Promise<any> {
-    const { refreshToken } = refreshTokenData;
+    const { refreshToken } = refreshTokenData || {};
 
-    if (!refreshToken) throw new UnauthorizedException();
+    if (!refreshToken?.trim()) throw new UnauthorizedException();
 
     const { user, newTokens } = await this.tokenService.refreshTokenPair(refreshToken, {
       transaction,
@@ -215,8 +215,8 @@ export class AuthenticationService {
   }
 
   public async validateTwoFactorSecret(mfaData: any, transaction?: Transaction): Promise<any> {
-    const { token, mfaToken } = mfaData;
-    if (!token || !mfaToken) throw new UnauthorizedException();
+    const { token, mfaToken } = mfaData || {};
+    if (!token?.trim() || !mfaToken?.trim()) throw new UnauthorizedException();
 
     const userAccount = await this.userAccountRepository.findOne({
       where: {
@@ -241,7 +241,7 @@ export class AuthenticationService {
   public async confirmEmail(token: string, transaction?: Transaction): Promise<any> {
     if (!token) throw new UnauthorizedException();
 
-    const isTokenExpired = await Ulid.isExpired(token, CONFIG.SYSTEM.EMAIL_TOKEN_EXPIRYL);
+    const isTokenExpired = await Ulid.isExpired(token, CONFIG.SYSTEM.EMAIL_TOKEN_EXPIRY);
     if (isTokenExpired) throw new UnauthorizedException('Invalid or expired verification token');
 
     const userAccount = await this.userAccountRepository.findUserByToken(token);
@@ -331,9 +331,10 @@ export class AuthenticationService {
     token: string,
     transaction?: Transaction,
   ): Promise<any> {
-    let { password } = resetPasswordData;
+    let { password } = resetPasswordData || {};
 
-    if (!token) throw new UnauthorizedException();
+    if (!token || !password?.trim()) throw new UnauthorizedException();
+
     const isTokenExpired = await Ulid.isExpired(token, CONFIG.SYSTEM.REFRESH_PASSWORD_TOKEN_EXPIRY);
     if (isTokenExpired) throw new UnauthorizedException('Invalid or expired verification token');
 

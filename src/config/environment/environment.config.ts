@@ -13,13 +13,14 @@ export const CONFIG = {
   },
   SYSTEM: {
     APP_NAME: process.env.APP_NAME,
+    CORS_ORIGINS: process.env.CORS_ORIGINS,
     FRONTEND_URL: process.env.FRONTEND_URL,
     PORT: process.env.PORT || '8000',
     ENV: process.env.NODE_ENV,
     ENCRYPT_SENSITIVE_SECRET_KEY: process.env.ENCRYPT_SENSITIVE_SECRET_KEY,
     JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || '',
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || '',
-    EMAIL_TOKEN_EXPIRYL: Number(process.env.EMAIL_TOKEN_EXPIRYL),
+    EMAIL_TOKEN_EXPIRY: Number(process.env.EMAIL_TOKEN_EXPIRY),
     REFRESH_PASSWORD_TOKEN_EXPIRY: Number(process.env.REFRESH_PASSWORD_TOKEN_EXPIRY),
   },
   TELEMETRY: {

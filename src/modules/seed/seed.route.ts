@@ -18,8 +18,8 @@ export class SeedRoute extends BaseRoute {
   }
 
   private initializeRoutes(): void {
-    this.publicRoute('post', Api.method.role, this.createBaseRole);
-    this.publicRoute('post', Api.method.user, this.createAdminAccount);
+    this.publicRoute('post', this.createBaseRole, Api.method.role);
+    this.publicRoute('post', this.createAdminAccount, Api.method.user);
   }
 
   private async createBaseRole(req: Request, res: Response): Promise<void> {

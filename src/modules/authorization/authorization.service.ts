@@ -19,9 +19,9 @@ export class AuthorizationService {
     roleData: { name: string; permissions: Permission[] },
     transaction?: Transaction,
   ): Promise<Role> {
-    const { name, permissions } = roleData;
+    const { name, permissions } = roleData || {};
 
-    if (!name || !Array.isArray(permissions) || permissions.length === 0)
+    if (!name?.trim() || !Array.isArray(permissions) || permissions.length === 0)
       throw new BadRequestException();
 
     const updatedPermissions =
@@ -78,9 +78,9 @@ export class AuthorizationService {
     roleData: { name: string },
     transaction?: Transaction,
   ): Promise<Role> {
-    const { name } = roleData;
+    const { name } = roleData || {};
 
-    if (!name || !roleCode) throw new BadRequestException();
+    if (!name?.trim() || !roleCode) throw new BadRequestException();
 
     const role = await this.roleRepository.findOne({
       where: { code: roleCode },

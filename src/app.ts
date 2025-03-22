@@ -3,9 +3,10 @@ import helmet from 'helmet';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
 import { databaseService, logger, mailService, swaggerConfiguration } from '@infrastructure/index';
-import { errorMiddleware, responseMiddleware } from '@gateway/index';
+import { errorMiddleware, responseMiddleware, xssClean } from '@gateway/index';
 import { CONFIG, routesConfiguration } from '@config/index';
 import { vaultService } from '@infrastructure/vault/vault.service';
+import { IncomingMessage, ServerResponse } from 'http';
 // import { keyRotationService } from '@infrastructure/keyRotation/keyRotation.service';
 
 class App {
@@ -49,16 +50,64 @@ class App {
   }
 
   private initializeMiddlewares() {
-    this.app.use(helmet());
-    this.app.use(cors());
+    this.app.use(
+      helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", 'data:'],
+            connectSrc: ["'self'"],
+            fontSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            frameSrc: ["'none'"],
+            upgradeInsecureRequests: [],
+          },
+        },
+        xssFilter: true,
+        noSniff: true,
+        referrerPolicy: { policy: 'same-origin' },
+      }),
+    );
+
+    this.app.use((req, res, next) => {
+      res.setHeader('X-XSS-Protection', '1; mode=block');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Referrer-Policy', 'same-origin');
+      res.setHeader('X-Frame-Options', 'DENY');
+      next();
+    });
+
+    this.app.use(
+      cors({
+        origin: CONFIG.SYSTEM.CORS_ORIGINS || '*',
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+      }),
+    );
 
     const httpLogger = pinoHttp({ logger });
     this.app.use(httpLogger);
 
-    this.app.use(express.json({ limit: '100mb' }));
+    this.app.use(
+      express.json({
+        limit: '100mb',
+        verify: (
+          req: IncomingMessage,
+          res: ServerResponse<IncomingMessage>,
+          buf: Buffer,
+          encoding: string,
+        ): void => {
+          JSON.parse(buf.toString());
+        },
+      }),
+    );
+
     this.app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
-    // this.app.use(cookieParser)
+    this.app.use(xssClean);
+
     this.app.use(responseMiddleware);
   }
 

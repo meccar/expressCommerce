@@ -32,4 +32,14 @@ export class UserAccountRepository extends RootRepository<UserAccount> {
       },
     });
   }
+
+  public async isUserActive(userAccountCode: string): Promise<boolean> {
+    const user = await this.findOne({
+      where: { code: userAccountCode, isActive: true },
+      raw: true,
+      attributes: ['email'],
+    });
+
+    return !!user;
+  }
 }

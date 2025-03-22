@@ -14,17 +14,17 @@ export class AuthenticationRoute extends BaseRoute {
   }
 
   private initializeRoutes(): void {
-    this.publicRoute('post', Api.method.login, this.login);
-    this.publicRoute('get', Api.method.confirmEmail, this.confirmEmail);
-    this.publicRoute('post', Api.method.resetPassword, this.resetPassword);
-    this.publicRoute('post', Api.method.requestResetPassword, this.resetPasswordRequest);
-    this.publicRoute('get', Api.method.verifyToken, this.verifyToken);
-    this.publicRoute('post', Api.method.generateTwoFactorSecret, this.generateTwoFactorSecret);
-    this.publicRoute('post', Api.method.validateTwoFactorSecret, this.validateTwoFactorSecret);
-    this.protectedRoute('post', Api.method.logout, this.logout);
-    this.protectedRoute('post', Api.method.refreshToken, this.refreshToken);
-    this.protectedRoute('post', Api.method.verifyTwoFactorSecret, this.verifyTwoFactorSecret);
-    this.protectedRoute('post', Api.method.disableTwoFactorSecret, this.disableTwoFactorSecret);
+    this.publicRoute('post', this.login, Api.method.login);
+    this.publicRoute('get', this.confirmEmail, Api.method.confirmEmail);
+    this.publicRoute('post', this.resetPassword, Api.method.resetPassword);
+    this.publicRoute('post', this.resetPasswordRequest, Api.method.requestResetPassword);
+    this.publicRoute('get', this.verifyToken, Api.method.verifyToken);
+    this.publicRoute('post', this.generateTwoFactorSecret, Api.method.generateTwoFactorSecret);
+    this.publicRoute('post', this.validateTwoFactorSecret, Api.method.validateTwoFactorSecret);
+    this.protectedRoute('post', this.logout, Api.method.logout);
+    this.protectedRoute('post', this.refreshToken, Api.method.refreshToken);
+    this.protectedRoute('post', this.verifyTwoFactorSecret, Api.method.verifyTwoFactorSecret);
+    this.protectedRoute('post', this.disableTwoFactorSecret, Api.method.disableTwoFactorSecret);
   }
 
   /**

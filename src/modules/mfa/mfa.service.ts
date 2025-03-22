@@ -39,8 +39,8 @@ export class MfaService {
     user: any,
     transaction?: Transaction,
   ): Promise<any> {
-    const { token } = twoFactorSecretData;
-    if (!user.twoFactorEnabled) throw new BadRequestException();
+    const { token } = twoFactorSecretData || {};
+    if (!token?.trim() || !user.twoFactorEnabled) throw new BadRequestException();
 
     const verified = this.verifyToken(token, user.twoFactorSecret);
 
@@ -73,8 +73,8 @@ export class MfaService {
     user: any,
     transaction?: Transaction,
   ): Promise<any> {
-    const { token } = twoFactorSecretData;
-    if (!user || !token) throw new UnauthorizedException();
+    const { token } = twoFactorSecretData || {};
+    if (!user || !token?.trim()) throw new UnauthorizedException();
     if (!user.twoFactorEnabled || !user.isTwoFactorVerified) throw new BadRequestException();
 
     const verified = this.verifyToken(token, user.twoFactorSecret);

@@ -11,7 +11,7 @@ export class Ulid {
     return Promise.resolve(decodeTime(ulid));
   }
 
-  static async isExpired(ulid: string, expiryMs: number = 15 * 60 * 1000): Promise<boolean> {
+  static async isExpired(ulid: string, expiryMs: number): Promise<boolean> {
     const createdAt = await this.getTimestamp(ulid);
     return Promise.resolve(Date.now() > createdAt + expiryMs);
   }

@@ -18,15 +18,21 @@ export abstract class BaseRoute {
 
   protected protectedRoute(
     method: HttpMethod,
-    path: string,
     handler: RouteHandler,
+    path?: string,
     // validator?: RequestValidator,
   ): void {
-    this.router[method](
-      `${this.basePath}${path}`,
-      authenticationMiddleware(),
-      this.errorHandler(handler),
-    );
+    path
+      ? this.router[method](
+          `${this.basePath}${path}`,
+          authenticationMiddleware(),
+          this.errorHandler(handler),
+        )
+      : this.router[method](
+          `${this.basePath}`,
+          authenticationMiddleware(),
+          this.errorHandler(handler),
+        );
     // validator
     //   ? this.router[method](
     //       `${this.basePath}${path}`,
@@ -43,11 +49,13 @@ export abstract class BaseRoute {
 
   protected publicRoute(
     method: HttpMethod,
-    path: string,
     handler: RouteHandler,
+    path?: string,
     // validator?: RequestValidator,
   ): void {
-    this.router[method](`${this.basePath}${path}`, this.errorHandler(handler));
+    path
+      ? this.router[method](`${this.basePath}${path}`, this.errorHandler(handler))
+      : this.router[method](`${this.basePath}`, this.errorHandler(handler));
     // validator
     //   ? this.router[method](
     //       `${this.basePath}${path}`,
