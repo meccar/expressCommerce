@@ -5,3 +5,7 @@ export interface Permission {
   subject: string;
   fields: string[];
 }
+
+export interface Permissions {
+  [key: string]: Permission[];
+}

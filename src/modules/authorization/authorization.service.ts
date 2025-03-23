@@ -4,15 +4,40 @@ import { UserRoleRepository } from './userRole.repository';
 import { Transactional } from '@common/decorators';
 import { Transaction } from '@sequelize/core';
 import { Role } from './role.model';
-import { BadRequestException, NotFoundException } from '@common/exceptions';
-import { Permission } from '@infrastructure/interfaces';
+import { BadRequestException, NotFoundException, UnauthorizedException } from '@common/exceptions';
+import { IAuthenticatedUser, Permission, Permissions } from '@infrastructure/interfaces';
 import { HttpMethod, Roles } from '@common/constants';
+import { AbilityBuilder, AbilityClass, FieldMatcher, PureAbility } from '@casl/ability';
+
+type Subjects = string;
+type AppAbility = PureAbility<[HttpMethod | 'manage', Subjects]>;
+const fieldMatcher: FieldMatcher = fields => field =>
+  fields.includes(field) || fields.includes('*' as any);
 
 export class AuthorizationService {
   private roleRepository: RoleRepository = new RoleRepository();
   private userRoleRepository: UserRoleRepository = new UserRoleRepository();
   private roleClaimRepository: RoleClaimRepository = new RoleClaimRepository();
-  constructor() {}
+
+  private user?: IAuthenticatedUser;
+  private permissions: Permission[] = [];
+  private abilities!: AppAbility;
+
+  constructor(user?: IAuthenticatedUser) {
+    this.user = user;
+  }
+
+  public async configure() {
+    const claimValue = await this.getClaimValueByUserCode(this.user?.code as string);
+
+    if (!claimValue) throw new UnauthorizedException();
+
+    this.permissions = claimValue;
+
+    const { can, build } = new AbilityBuilder(PureAbility as AbilityClass<AppAbility>);
+    can('manage', 'all');
+    this.abilities = build({ fieldMatcher });
+  }
 
   @Transactional()
   public async createRole(
@@ -44,32 +69,6 @@ export class AuthorizationService {
     }
 
     return role;
-  }
-
-  public async getRoleNameByUserCode(userAccountCode: string): Promise<string | null> {
-    const role = await this.userRoleRepository.findOneByUser(userAccountCode);
-
-    if (!role) return null;
-
-    const foundRole = await this.roleRepository.findOne({
-      attributes: ['name'],
-      where: { code: role.code },
-      raw: true,
-    });
-
-    return foundRole?.name || null;
-  }
-
-  public async getDetailRole(roleCode: string): Promise<Role> {
-    const role = await this.roleRepository.findOne({
-      where: { code: roleCode },
-    });
-    if (!role) throw new NotFoundException();
-    return role;
-  }
-
-  public async getAllRoles(): Promise<Role[]> {
-    return await this.roleRepository.findAll();
   }
 
   @Transactional()
@@ -111,5 +110,43 @@ export class AuthorizationService {
     await this.roleClaimRepository.softDelete({ where: roleCode }, { transaction });
 
     return await this.roleRepository.softDelete({ where: roleCode }, { transaction });
+  }
+
+  public async getRoleNameByUserCode(userAccountCode: string): Promise<string | null> {
+    const role = await this.userRoleRepository.findOneByUser(userAccountCode);
+
+    if (!role) return null;
+
+    const foundRole = await this.roleRepository.findOne({
+      attributes: ['name'],
+      where: { code: role.code },
+      raw: true,
+    });
+
+    return foundRole?.name || null;
+  }
+
+  public async getClaimValueByUserCode(userAccountCode: string): Promise<Permission[] | null> {
+    const role = await this.userRoleRepository.findOneByUser(userAccountCode);
+
+    if (!role) return null;
+
+    const roleClaims = await this.roleClaimRepository.findManyByRole(role.code);
+
+    if (!roleClaims || roleClaims.length === 0) return null;
+
+    return roleClaims.map(claim => claim.claimValue);
+  }
+
+  public async getDetailRole(roleCode: string): Promise<Role> {
+    const role = await this.roleRepository.findOne({
+      where: { code: roleCode },
+    });
+    if (!role) throw new NotFoundException();
+    return role;
+  }
+
+  public async getAllRoles(): Promise<Role[]> {
+    return await this.roleRepository.findAll();
   }
 }

@@ -8,8 +8,12 @@ export class RoleClaimRepository extends RootRepository<RoleClaim> {
     super(RoleClaim);
   }
 
-  public async getRoleClaims(roleCode: string): Promise<RoleClaim[]> {
+  public async findManyByRole(roleCode: string): Promise<RoleClaim[] | null> {
     return this.findAll({ where: { roleCode } });
+  }
+
+  public async findOneByRole(roleCode: string): Promise<RoleClaim | null> {
+    return this.findOne({ where: { roleCode } });
   }
 
   public async addClaim(

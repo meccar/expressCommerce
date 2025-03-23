@@ -13,6 +13,7 @@
     "prettier:fix": "prettier --write \"src/**/*.ts\""
   },
   "dependencies": {
+    "@casl/ability": "^6.7.3",
     "@elastic/ecs-winston-format": "^1.5.3",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/auto-instrumentations-node": "^0.56.1",

@@ -6,8 +6,6 @@ export class UserRoleRepository extends RootRepository<UserRole> {
   constructor() {
     super(UserRole);
   }
-
-
   
   public async findOneByUser(userAccountCode: string): Promise<UserRole | null> {
     return this.findOne({ where: { userAccountCode } });
