@@ -1,6 +1,6 @@
 import { HttpMethod, nextCatch } from '@common/index';
 import { authenticationMiddleware } from '@gateway/index';
-import { RequestValidator } from '@gateway/middleware/validation/validator/requestValidator';
+import { authorizationMiddleware } from '@gateway/middleware/authorization/authorization.middlware';
 import express from 'express';
 import { Request, Response } from 'express';
 
@@ -26,11 +26,13 @@ export abstract class BaseRoute {
       ? this.router[method](
           `${this.basePath}${path}`,
           authenticationMiddleware(),
+          authorizationMiddleware(),
           this.errorHandler(handler),
         )
       : this.router[method](
           `${this.basePath}`,
           authenticationMiddleware(),
+          authorizationMiddleware(),
           this.errorHandler(handler),
         );
     // validator
