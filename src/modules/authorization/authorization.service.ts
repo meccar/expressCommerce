@@ -24,7 +24,7 @@ export class AuthorizationService {
   private abilities!: AppAbility;
 
   constructor(user?: IAuthenticatedUser) {
-    this.user = user;
+    if (user) this.user = user;
   }
 
   public async configure() {

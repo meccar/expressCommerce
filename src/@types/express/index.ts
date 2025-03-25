@@ -1,5 +1,6 @@
 import { IAuthenticatedUser } from '@infrastructure/index';
 import { AuthorizationService } from '@modules/authorization/authorization.service';
+import { Request } from 'express';
 
 declare global {
   namespace Express {
@@ -7,9 +8,9 @@ declare global {
 
     interface Request {
       user?: IAuthenticatedUser;
-      startTime?: number;
       permission: AuthorizationService;
       clientIp: string;
+      startTime: number;
     }
   }
 }
