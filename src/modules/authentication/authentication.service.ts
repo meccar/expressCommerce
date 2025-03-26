@@ -39,40 +39,30 @@ export class AuthenticationService {
   private tokenService: TokenService = new TokenService();
   private mfaService: MfaService = new MfaService();
 
-  constructor() {}
+  constructor() {
+    this.initializePassport();
+  }
 
   private initializePassport() {
     const opts: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: this.tokenService.getJwtSecret('access'),
+      secretOrKey: this.tokenService.getJwtSecret('refresh'),
       passReqToCallback: true,
     };
 
     passport.use(
-      new JwtStrategy(opts, async (jwt_payload: JwtAccessPayload, done) => {
+      'jwt',
+      new JwtStrategy(opts, async (req: Request, jwt_payload: JwtAccessPayload, done) => {
+        if (!jwt_payload || !jwt_payload.code) {
+          return done(null, false, { message: 'Invalid token' });
+        }
+
         const user = await this.userAccountRepository.findOne({
           where: { code: jwt_payload.code },
           attributes: { exclude: ['password'] },
-          include: [
-            {
-              model: UserClaim,
-              attributes: ['claimType', 'claimVale'],
-            },
-            {
-              model: UserLogin,
-              attributes: ['loginProvider', 'providerKey', 'providerDisplayName'],
-            },
-          ],
         });
 
-        if (!user) throw new NotFoundException('User not found');
-
-        if (!user.isActive) throw new UnauthorizedException('Account is inactive');
-
-        if (!user.emailConfirmed) throw new UnauthorizedException('Email not confirmed');
-
-        if (user.lockoutEnd && new Date(user.lockoutEnd) > new Date())
-          throw new UnauthorizedException('Account is locked out');
+        if (!user) return done(null, false, { message: 'User not found' });
 
         const claims = await this.userClaimRepository.findAll({
           where: { userAccountCode: user.code },
@@ -112,10 +102,9 @@ export class AuthenticationService {
 
   @Transactional()
   public async login(loginData: any, transaction?: Transaction): Promise<any> {
-    const { email, username, password, isPersistent, lockoutOnFailure, requireConfirmed } =
-      loginData || {};
+    const { email, username, password, isPersistent } = loginData || {};
 
-    if (!email?.trim() || !username?.trim() || !password?.trim())
+    if (!((email?.trim() || username?.trim()) && password?.trim()))
       throw new BadRequestException('Please enter email, username and password');
 
     const existingUser = await this.userAccountRepository.findByEmailOrUsername(email, username);
@@ -123,15 +112,7 @@ export class AuthenticationService {
     if (!existingUser)
       throw new UnauthorizedException('Either email, username or password is incorrect');
 
-    const signInResult = await this.passwordSignInAsync(
-      existingUser,
-      password,
-      {
-        lockoutOnFailure,
-        requireConfirmed,
-      },
-      transaction,
-    );
+    const signInResult = await this.passwordSignInAsync(existingUser, password, transaction);
 
     if (!signInResult.succeeded) throw new UnauthorizedException(signInResult.message);
 
@@ -156,11 +137,9 @@ export class AuthenticationService {
 
   @Transactional()
   public async logout(logoutData: any, user: any, transaction?: Transaction): Promise<any> {
-    const { refreshToken } = logoutData || {};
+    if (!user || !logoutData?.trim()) throw new UnauthorizedException();
 
-    if (!user || !refreshToken?.trim()) throw new UnauthorizedException();
-
-    const decoded = this.tokenService.verifyRefreshToken(refreshToken);
+    const decoded = this.tokenService.verifyRefreshToken(logoutData);
 
     if (decoded.code !== user.code) throw new UnauthorizedException();
 
@@ -168,7 +147,7 @@ export class AuthenticationService {
       decoded.code,
       'JWT',
       'RefreshToken',
-      refreshToken,
+      logoutData,
     );
 
     if (!storedToken) throw new UnauthorizedException();
@@ -374,12 +353,10 @@ export class AuthenticationService {
   private async passwordSignInAsync(
     user: UserAccount,
     password: string,
-    options: SignInOptions = {},
     transaction?: Transaction,
   ): Promise<SignInResult> {
-    const { lockoutOnFailure = true, requireConfirmed = true } = options;
-
-    if (requireConfirmed && !user.emailConfirmed)
+    // if (!user.emailConfirmed && !user.phone_number_confirmed)
+    if (!user.emailConfirmed)
       return {
         succeeded: false,
         isNotAllowed: true,
@@ -401,7 +378,7 @@ export class AuthenticationService {
     );
 
     if (!isPasswordValid) {
-      if (lockoutOnFailure) {
+      if (user.lockoutEnabled) {
         const accessFailedCount = (user.accessFailedCount || 0) + 1;
         const updates: Partial<UserAccount> = { accessFailedCount };
 
@@ -411,9 +388,7 @@ export class AuthenticationService {
           user.lockoutEnd = lockoutEnd;
         }
 
-        const updatedUserAccount = await this.userAccountRepository.update(user, updates, {
-          transaction,
-        });
+        const updatedUserAccount = await this.userAccountRepository.update(user, updates);
 
         if (!updatedUserAccount) throw new BadRequestException();
       }

@@ -7,6 +7,7 @@ import { errorMiddleware, responseMiddleware, xssClean } from '@gateway/index';
 import { CONFIG, routesConfiguration } from '@config/index';
 import { vaultService } from '@infrastructure/vault/vault.service';
 import { IncomingMessage, ServerResponse } from 'http';
+import passport from 'passport';
 // import { keyRotationService } from '@infrastructure/keyRotation/keyRotation.service';
 
 class App {
@@ -107,6 +108,8 @@ class App {
     this.app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
     this.app.use(xssClean);
+    
+    this.app.use(passport.initialize());
 
     this.app.use(responseMiddleware);
   }

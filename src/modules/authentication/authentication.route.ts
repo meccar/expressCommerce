@@ -56,7 +56,7 @@ export class AuthenticationRoute extends BaseRoute {
    *         description: logout user
    */
   private async logout(req: Request, res: Response): Promise<void> {
-    const logoutData = req.body;
+    const logoutData = req.headers['authorization']?.split(' ')[1];
     const user = req.user;
     const result = await this.authenticationService.logout(logoutData, user);
     res.success(result, statusCodes.OK);

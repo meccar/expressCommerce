@@ -131,7 +131,7 @@ export class AuthorizationService {
 
     if (!role) return null;
 
-    const roleClaims = await this.roleClaimRepository.findManyByRole(role.code);
+    const roleClaims = await this.roleClaimRepository.findManyByRole(role.roleCode);
 
     if (!roleClaims || roleClaims.length === 0) return null;
 

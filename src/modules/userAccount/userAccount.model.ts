@@ -61,10 +61,10 @@ export class UserAccount extends BaseModel<
   @NotNull
   @NotEmpty({ msg: 'Please enter your password' })
   @Len({ args: [8, 100], msg: 'Password must be between 8 and 100 characters' })
-  @Is({
-    args: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-    msg: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
-  })
+  // @Is({
+  //   args: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+  //   msg: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+  // })
   declare password: string;
 
   @Attribute(DataTypes.STRING(100))
@@ -90,8 +90,8 @@ export class UserAccount extends BaseModel<
   @Index
   declare emailConfirmed: boolean;
 
-  @Attribute(DataTypes.UUID.V4)
-  @Default(sql.uuidV4)
+  @Attribute(DataTypes.UUID.V1)
+  @Default(sql.uuidV1)
   @NotNull
   declare securityStamp: string;
 
@@ -118,7 +118,7 @@ export class UserAccount extends BaseModel<
   declare lockoutEnd: Date | null;
 
   @Attribute(DataTypes.BOOLEAN)
-  @Default(false)
+  @Default(true)
   @NotNull
   declare lockoutEnabled: boolean;
 
