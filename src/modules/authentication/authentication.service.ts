@@ -46,8 +46,9 @@ export class AuthenticationService {
   private initializePassport() {
     const opts: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: this.tokenService.getJwtSecret('refresh'),
+      secretOrKey: this.tokenService.getJwtSecret('access'),
       passReqToCallback: true,
+      ignoreExpiration: false,
     };
 
     passport.use(
@@ -62,7 +63,7 @@ export class AuthenticationService {
           attributes: { exclude: ['password'] },
         });
 
-        if (!user) return done(null, false, { message: 'User not found' });
+        if (!user) return done(null, false, { message: 'Invalid token' });
 
         const claims = await this.userClaimRepository.findAll({
           where: { userAccountCode: user.code },
@@ -123,14 +124,13 @@ export class AuthenticationService {
       'Local',
       transaction,
     );
-
-    const tokens = await this.tokenService.generateTokenPair(existingUser, {
+    const tokenCode = Ulid.generateUlid();
+    const tokens = await this.tokenService.generateTokenPair(existingUser, tokenCode, {
       expiresIn: isPersistent ? '1d' : '15m',
       isPersistent,
-      transaction,
     });
 
-    await this.tokenService.storeRefreshToken(existingUser.code, tokens.refreshToken, transaction);
+    await this.tokenService.storeToken(existingUser.code, 'JWT', 'JWT', tokenCode, transaction);
 
     return tokens;
   }
@@ -139,18 +139,16 @@ export class AuthenticationService {
   public async logout(logoutData: any, user: any, transaction?: Transaction): Promise<any> {
     if (!user || !logoutData?.trim()) throw new UnauthorizedException();
 
-    const decoded = this.tokenService.verifyRefreshToken(logoutData);
+    const decoded = this.tokenService.verifyAccessToken(logoutData);
 
     if (decoded.code !== user.code) throw new UnauthorizedException();
 
-    const storedToken = await this.tokenService.findToken(
-      decoded.code,
-      'JWT',
-      'RefreshToken',
-      logoutData,
+    const revokeToken = await this.tokenService.revokeUserTokensByToken(
+      decoded.tokenCode,
+      transaction,
     );
 
-    if (!storedToken) throw new UnauthorizedException();
+    if (revokeToken < 1) throw new UnauthorizedException();
 
     return { message: 'Logged out successfully' };
   }
@@ -161,12 +159,12 @@ export class AuthenticationService {
 
     if (!refreshToken?.trim()) throw new UnauthorizedException();
 
-    const { user, newTokens } = await this.tokenService.refreshTokenPair(refreshToken, {
+    const { user, tokens } = await this.tokenService.refreshToken(refreshToken, {
       transaction,
     });
 
     return {
-      tokens: newTokens,
+      tokens,
       expiresIn: 1800,
     };
   }

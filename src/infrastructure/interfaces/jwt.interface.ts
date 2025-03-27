@@ -1,15 +1,21 @@
-export interface JwtAccessPayload {
+import { JwtPayload } from 'jsonwebtoken';
+
+export interface JwtAccessPayload extends JwtPayload {
   code: string;
   username: string;
   tokenType: 'access';
+  tokenCode: string;
+  persistent: boolean;
   claims?: Array<{ type: string; value: string }>;
   providers?: Array<{ provider: string; providerKey: string }>;
-  jti: string;
+  // jti: string;
 }
 
-export interface JwtRefreshPayload {
+export interface JwtRefreshPayload extends JwtPayload {
   code: string;
   username: string;
   tokenType: 'refresh';
-  jti: string;
+  tokenCode: string;
+  persistent: boolean;
+  // jti: string;
 }

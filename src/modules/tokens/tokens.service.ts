@@ -1,4 +1,4 @@
-import { Transactional, Ulid, UnauthorizedException } from '@common/index';
+import { BadRequestException, Transactional, Ulid, UnauthorizedException } from '@common/index';
 import { CONFIG } from '@config/index';
 import { JwtAccessPayload, JwtRefreshPayload } from '@infrastructure/index';
 import { UserToken } from '@modules/authentication';
@@ -30,7 +30,7 @@ export class TokenService {
     token: string,
     transaction?: Transaction,
   ): Promise<UserToken> {
-    return this.storeToken(userAccountCode, 'JWT', 'RefreshToken', token, transaction);
+    return this.storeToken(userAccountCode, 'JWT', 'JWT', token, transaction);
   }
 
   @Transactional()
@@ -53,97 +53,121 @@ export class TokenService {
   }
 
   @Transactional()
-  public async invalidateToken(token: string, transaction?: Transaction): Promise<void> {
-    await this.userTokenRepository.softDelete({ value: token }, { transaction });
+  public async updateToken(
+    userAccountCode: string,
+    loginProvider: string = 'JWT',
+    name: string,
+    value: string,
+    transaction?: Transaction,
+  ): Promise<UserToken | null> {
+    const userToken = await this.findToken(userAccountCode, loginProvider, name);
+
+    if (!userToken) return null;
+
+    return this.userTokenRepository.update(
+      userToken,
+      {
+        value,
+      },
+      { transaction },
+    );
   }
 
   @Transactional()
-  public async revokeAllUserTokens(
+  public async revokeUserTokensByUserAccountCode(
     userAccountCode: string,
     transaction?: Transaction,
-  ): Promise<void> {
-    await this.userTokenRepository.softDelete({ userAccountCode }, { transaction });
+  ): Promise<number> {
+    return await this.userTokenRepository.softDelete({ userAccountCode }, { transaction });
   }
 
   @Transactional()
-  public async refreshTokenPair(
+  public async revokeUserTokensByToken(token: string, transaction?: Transaction): Promise<number> {
+    return await this.userTokenRepository.softDelete({ value: token }, { transaction });
+  }
+
+  @Transactional()
+  public async refreshToken(
     refreshToken: string,
     options: { transaction?: Transaction } = {},
-  ): Promise<{ user: UserAccount; newTokens: { accessToken: string; refreshToken: string } }> {
+  ): Promise<{ user: UserAccount; tokens: { accessToken: string; refreshToken: string } }> {
     const decoded = this.verifyRefreshToken(refreshToken);
 
     const [storedToken, user] = await Promise.all([
-      this.findToken(decoded.code, 'JWT', 'RefreshToken', refreshToken),
+      this.findToken(decoded.code, 'JWT', 'JWT'),
       this.userAccountRepository.findOne({
         where: { code: decoded.code },
       }),
     ]);
 
-    if (!storedToken || !user) throw new UnauthorizedException();
+    if (!storedToken || storedToken.value !== decoded.tokenCode || !user)
+      throw new UnauthorizedException();
 
-    const newTokens = await this.generateTokenPair(user, {
-      isPersistent: true,
-      transaction: options.transaction,
-    });
+    const tokenCode = Ulid.generateUlid();
 
-    await this.invalidateToken(refreshToken, options.transaction);
+    let tokens;
+    if (decoded.exp! - Math.floor(Date.now() / 1000) < (decoded.persistent ? 1800 : 900)) {
+      tokens = await this.generateTokenPair(user, tokenCode, {
+        isPersistent: decoded.persistent,
+      });
+    } else {
+      const accessToken = await this.generateAccessToken(user, tokenCode, {
+        isPersistent: decoded.persistent,
+      });
+      tokens = { accessToken, refreshToken };
+    }
 
-    await this.storeRefreshToken(user.code, newTokens.refreshToken, options.transaction);
+    const updateToken = await this.updateToken(
+      decoded.code,
+      'JWT',
+      'JWT',
+      tokenCode,
+      options.transaction,
+    );
+    if (!updateToken) throw new BadRequestException();
 
-    return { user, newTokens };
+    return { user, tokens };
   }
 
-  public async generateTokenPair(
+  public async generateAccessToken(
     user: UserAccount,
+    tokenCode: string,
     options: {
       expiresIn?: string;
       isPersistent?: boolean;
-      transaction?: Transaction;
     } = {},
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  ): Promise<string> {
     const [claimsResult, loginsResult] = await Promise.all([
       this.userClaimRepository.getUserClaims(user.code),
       this.userLoginRepository.findAll({
         where: { userAccountCode: user.code },
-        transaction: options.transaction,
       }),
     ]);
-
-    const claims = claimsResult || claimsResult;
-    const logins = loginsResult || loginsResult;
 
     const accessPayload: JwtAccessPayload = {
       code: user.code,
       username: user.username || '',
       tokenType: 'access',
-      claims: Array.isArray(claims)
-        ? claims.map(claim => ({
+      tokenCode,
+      persistent: options.isPersistent || false,
+      claims: Array.isArray(claimsResult)
+        ? claimsResult.map(claim => ({
             type: claim.claimType,
             value: claim.claimValue,
           }))
         : [],
-      providers: Array.isArray(logins)
-        ? logins.map(login => ({
+      providers: Array.isArray(loginsResult)
+        ? loginsResult.map(login => ({
             provider: String(login.loginProvider),
             providerKey: login.providerKey,
           }))
         : [],
-      jti: Ulid.generateUlid(),
-    };
-
-    const refreshPayload: JwtRefreshPayload = {
-      code: user.code,
-      username: user.username || '',
-      tokenType: 'refresh',
-      jti: Ulid.generateUlid(),
     };
 
     const algorithm: Algorithm = 'HS256';
-
     const accessExpiresIn = options.isPersistent ? '30m' : options.expiresIn || '15m';
-    const refreshExpiresIn = options.isPersistent ? '30d' : options.expiresIn || '1d';
 
-    const accessToken = jwt.sign(
+    return jwt.sign(
       accessPayload,
       this.getJwtSecret('access') as Secret,
       {
@@ -151,11 +175,36 @@ export class TokenService {
         expiresIn: accessExpiresIn,
       } as SignOptions,
     );
+  }
 
-    const refreshToken = jwt.sign(refreshPayload, this.getJwtSecret('refresh'), {
-      algorithm,
-      expiresIn: refreshExpiresIn,
-    } as SignOptions);
+  public async generateTokenPair(
+    user: UserAccount,
+    tokenCode: string,
+    options: {
+      expiresIn?: string;
+      isPersistent?: boolean;
+    } = {},
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const refreshPayload: JwtRefreshPayload = {
+      code: user.code,
+      username: user.username || '',
+      tokenType: 'refresh',
+      tokenCode,
+      persistent: options.isPersistent || false,
+    };
+
+    const algorithm: Algorithm = 'HS256';
+    const refreshExpiresIn = options.isPersistent ? '30d' : options.expiresIn || '1d';
+
+    const accessToken = await this.generateAccessToken(user, tokenCode, options);
+    const refreshToken = jwt.sign(
+      refreshPayload,
+      this.getJwtSecret('refresh') as Secret,
+      {
+        algorithm,
+        expiresIn: refreshExpiresIn,
+      } as SignOptions,
+    );
 
     return { accessToken, refreshToken };
   }
@@ -164,14 +213,12 @@ export class TokenService {
     userAccountCode: string,
     loginProvider: string = 'JWT',
     name: string,
-    value: string,
   ): Promise<UserToken | null> {
     return this.userTokenRepository.findOne({
       where: {
         userAccountCode,
         loginProvider,
         name,
-        value,
       },
     });
   }

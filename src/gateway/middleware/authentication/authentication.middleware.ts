@@ -1,6 +1,6 @@
-import { NotFoundException, UnauthorizedException } from '@common/exceptions';
+import { UnauthorizedException } from '@common/exceptions';
 import passport from 'passport';
-import express, { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { IAuthenticatedUser } from '@infrastructure/index';
 
 export function authenticationMiddleware() {
@@ -15,15 +15,20 @@ export function authenticationMiddleware() {
         }
 
         if (!user) {
-          if (info && info.message === 'Invalid token') {
-            return next(new UnauthorizedException('Invalid token'));
+          switch (info?.message) {
+            case 'Invalid token':
+              return next(new UnauthorizedException('Invalid access token'));
+            case 'jwt expired':
+              return next(new UnauthorizedException('Access token has expired'));
+            case 'User not found':
+              return next(new UnauthorizedException('User not found'));
+            case 'Token is no longer valid':
+              return next(new UnauthorizedException('Token is no longer valid'));
+            default:
+              return next(new UnauthorizedException('Unauthorized access'));
           }
-          if (info && info.message === 'User not found') {
-            return next(new UnauthorizedException('User not found'));
-          }
-          return next(new UnauthorizedException('Unauthorized access'));
         }
-        
+
         req.user = user;
         next();
       },
