@@ -89,8 +89,8 @@ export class TokenService {
   @Transactional()
   public async refreshToken(
     refreshToken: string,
-    options: { transaction?: Transaction } = {},
-  ): Promise<{ user: UserAccount; tokens: { accessToken: string; refreshToken: string } }> {
+    transaction?: Transaction,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const decoded = this.verifyRefreshToken(refreshToken);
 
     const [storedToken, user] = await Promise.all([
@@ -105,28 +105,26 @@ export class TokenService {
 
     const tokenCode = Ulid.generateUlid();
 
-    let tokens;
-    if (decoded.exp! - Math.floor(Date.now() / 1000) < (decoded.persistent ? 1800 : 900)) {
-      tokens = await this.generateTokenPair(user, tokenCode, {
+    if (decoded.exp! - Math.floor(Date.now() / 1000) <= (decoded.persistent ? 1800 : 900)) {
+      const updateToken = await this.updateToken(
+        decoded.code,
+        'JWT',
+        'JWT',
+        tokenCode,
+        transaction,
+      );
+
+      if (!updateToken) throw new BadRequestException();
+
+      return await this.generateTokenPair(user, tokenCode, {
         isPersistent: decoded.persistent,
       });
-    } else {
-      const accessToken = await this.generateAccessToken(user, tokenCode, {
-        isPersistent: decoded.persistent,
-      });
-      tokens = { accessToken, refreshToken };
     }
 
-    const updateToken = await this.updateToken(
-      decoded.code,
-      'JWT',
-      'JWT',
-      tokenCode,
-      options.transaction,
-    );
-    if (!updateToken) throw new BadRequestException();
-
-    return { user, tokens };
+    const accessToken = await this.generateAccessToken(user, decoded.tokenCode, {
+      isPersistent: decoded.persistent,
+    });
+    return { accessToken, refreshToken };
   }
 
   public async generateAccessToken(

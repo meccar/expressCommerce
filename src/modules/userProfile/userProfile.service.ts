@@ -3,10 +3,13 @@ import { UserProfileRepository } from './userProfile.repository';
 import { Transaction } from '@sequelize/core';
 import { BadRequestException, NotFoundException } from '@common/exceptions';
 import { UserAccountRepository } from '@modules/userAccount';
+import { LogActivityRepository } from '@modules/log/logActivity.repository';
+import { UserProfile } from './userProfile.model';
 
 export class UserProfileSerivce {
   private userProfileRepository: UserProfileRepository = new UserProfileRepository();
   private userAccountRepository: UserAccountRepository = new UserAccountRepository();
+  private logActivityRepository: LogActivityRepository = new LogActivityRepository();
 
   constructor() {}
 
@@ -29,6 +32,29 @@ export class UserProfileSerivce {
 
     if (!isUserActive) throw new NotFoundException('User is not active');
 
+    await this.logActivityRepository.addLog(
+      {
+        userAccountCode: userProfile.userAccountCode,
+        action: LogAction.Update,
+        model: UserProfile,
+        code: userProfile.code,
+        newValue: userProfileData,
+        oldValue: userProfile,
+      },
+      transaction,
+    );
+
     return this.userProfileRepository.update(userProfile, userProfileData, { transaction });
   }
 }
+
+export const LogAction = {
+  ViewDetail: 1,
+  ViewField: 2,
+  GetOTP: 3,
+  Copy: 4,
+  Create: 5,
+  Update: 6,
+  Delete: 7,
+};
+export type LogAction = (typeof LogAction)[keyof typeof LogAction];

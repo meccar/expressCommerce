@@ -7,6 +7,9 @@ export const TableNames = {
   UserToken: 'user-token',
   RoleClaim: 'role-claim',
   UserLogin: 'user-login',
+  LogAudit: 'log-audit',
+  LogActivity: 'log-activity',
+  LogSystem: 'log-system',
 } as const;
 
 export type TableNames = (typeof TableNames)[keyof typeof TableNames];

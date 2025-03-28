@@ -159,14 +159,7 @@ export class AuthenticationService {
 
     if (!refreshToken?.trim()) throw new UnauthorizedException();
 
-    const { user, tokens } = await this.tokenService.refreshToken(refreshToken, {
-      transaction,
-    });
-
-    return {
-      tokens,
-      expiresIn: 1800,
-    };
+    return await this.tokenService.refreshToken(refreshToken, transaction);
   }
 
   public async generateTwoFactorSecret(token: string, transaction?: Transaction): Promise<any> {
@@ -415,54 +408,5 @@ export class AuthenticationService {
       };
 
     return { succeeded: true };
-  }
-
-  private async validateExternalProviderToken(
-    loginProvider: string,
-    providerKey: string,
-  ): Promise<UserAccount | null> {
-    const userLogin = await this.userLoginRepository.findOne({
-      where: {
-        loginProvider,
-        providerKey,
-      },
-      include: [{ model: UserAccount }],
-    });
-
-    if (!userLogin) return null;
-
-    return this.userAccountRepository.findOne({
-      where: { code: userLogin.userAccountCode },
-      attributes: { exclude: ['password'] },
-    });
-  }
-
-  private authorizeByClaims(requiredClaims: Array<{ type: string; value?: string }>) {
-    return async (req: any, res: any, next: any) => {
-      if (!req.user.claims) {
-        const claims = await this.userClaimRepository.findAll({
-          where: { userAccountCode: req.user.code },
-        });
-
-        req.user.claims = claims.map(claim => ({
-          type: claim.claimType,
-          value: claim.claimValue,
-        }));
-      }
-
-      const userClaims = req.user.claims || [];
-
-      const hasRequiredClaims = requiredClaims.every(requiredClaim =>
-        userClaims.some(
-          (userClaim: { type: string; value?: string }) =>
-            userClaim.type === requiredClaim.type &&
-            (requiredClaim.value === undefined || userClaim.value === requiredClaim.value),
-        ),
-      );
-
-      if (!hasRequiredClaims) throw new UnauthorizedException('');
-
-      next();
-    };
   }
 }
