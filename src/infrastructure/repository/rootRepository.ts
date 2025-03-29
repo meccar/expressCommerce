@@ -1,4 +1,9 @@
 import {
+  InsertLogActivityOptions,
+  InsertLogAuditOptions,
+} from '@infrastructure/interfaces/log.interface';
+import { LogAction } from '@modules/index';
+import {
   CreateOptions,
   CreationAttributes,
   DestroyOptions,
@@ -12,8 +17,93 @@ import {
   WhereOptions,
 } from '@sequelize/core';
 
+export interface ILoggerActivity {
+  log(options: {
+    action: number;
+    model: ModelStatic<Model>;
+    code?: string;
+    oldValue?: any;
+    newValue?: any;
+    userAccountCode?: string;
+    transaction?: Transaction;
+  }): Promise<void>;
+}
+
+export interface LogOptions {
+  userAccountCode: string;
+  useActivityLog?: boolean;
+  useAuditLog?: boolean;
+  status?: number;
+  resourceName?: string;
+  resourceField?: string;
+}
+
+export interface ILoggerActivity {
+  addLog(options: InsertLogActivityOptions, transaction?: Transaction): Promise<void>;
+}
+
+export interface ILoggerAudit {
+  addLog(options: InsertLogAuditOptions, transaction?: Transaction): Promise<void>;
+}
+
 export class RootRepository<T extends Model> {
-  constructor(private readonly model: ModelStatic<T>) {}
+  constructor(
+    private readonly model: ModelStatic<T>,
+    private readonly loggerActivity?: ILoggerActivity,
+    private readonly loggerAudit?: ILoggerAudit,
+  ) {}
+
+  private async logAction(
+    action: number,
+    code: string | undefined,
+    oldValue?: any,
+    newValue?: any,
+    options?: {
+      transaction?: Transaction;
+      logOptions?: LogOptions;
+    },
+  ): Promise<void> {
+    const promises: Promise<void>[] = [];
+
+    if (!code || !options?.logOptions?.userAccountCode) return;
+
+    if (options?.logOptions?.useActivityLog && this.loggerActivity) {
+      promises.push(
+        this.loggerActivity.addLog(
+          {
+            userAccountCode: options.logOptions.userAccountCode,
+            action,
+            model: this.model,
+            code,
+            oldValue,
+            newValue,
+          },
+          options.transaction,
+        ),
+      );
+    }
+
+    if (options?.logOptions?.useAuditLog && this.loggerAudit) {
+      promises.push(
+        this.loggerAudit.addLog(
+          {
+            userAccountCode: options.logOptions.userAccountCode,
+            action,
+            model: this.model,
+            resourceName: options.logOptions.resourceName || this.model.name,
+            resourceField: options.logOptions.resourceField,
+            status: options.logOptions.status || 1,
+            code,
+          },
+          options.transaction,
+        ),
+      );
+    }
+
+    if (promises.length > 0) {
+      await Promise.all(promises);
+    }
+  }
 
   public async findAll(options?: FindOptions<T> & { transaction?: Transaction }): Promise<T[]> {
     return await this.model.findAll(options);
@@ -39,23 +129,41 @@ export class RootRepository<T extends Model> {
   }
 
   public async findOrCreate(
-    options: FindOrCreateOptions<T> & { transaction?: Transaction },
+    options: FindOrCreateOptions<T> & { transaction?: Transaction; logOptions?: LogOptions },
   ): Promise<T> {
-    const [instance] = await this.model.findOrCreate(options);
+    const [instance, created] = await this.model.findOrCreate(options);
+
+    if (created && options.logOptions)
+      await this.logAction(LogAction.Create, (instance as any).code, {
+        transaction: options.transaction,
+        logOptions: options.logOptions,
+      });
+
     return instance;
   }
 
   public async create(
     data: Partial<T>,
-    options?: CreateOptions<T> & { transaction?: Transaction },
+    options?: CreateOptions<T> & { transaction?: Transaction; logOptions?: LogOptions },
   ): Promise<T> {
-    return await this.model.create(data as any, options);
+    const newRecord = await this.model.create(data as any, options);
+
+    if (options?.logOptions)
+      await this.logAction(LogAction.Create, (newRecord as any).code, {
+        transaction: options.transaction,
+        logOptions: options.logOptions,
+      });
+
+    return newRecord;
   }
 
   public async update(
     currentRecord: T,
     data: Partial<T>,
-    options?: Omit<CreateOptions<T>, 'where'> & { transaction?: Transaction },
+    options?: Omit<CreateOptions<T>, 'where'> & {
+      logOptions?: LogOptions;
+      transaction?: Transaction;
+    },
   ): Promise<T> {
     const currentData = currentRecord.toJSON();
 
@@ -69,6 +177,12 @@ export class RootRepository<T extends Model> {
       options,
     );
 
+    if (options?.logOptions)
+      await this.logAction(LogAction.Update, (currentRecord as any).code, currentData, data, {
+        transaction: options.transaction,
+        logOptions: options.logOptions,
+      });
+
     await currentRecord.destroy({
       transaction: options?.transaction,
     });
@@ -78,12 +192,29 @@ export class RootRepository<T extends Model> {
 
   public async softDelete(
     where: WhereOptions<T>,
-    options?: Omit<DestroyOptions<T>, 'where'> & { transaction?: Transaction },
+    options?: Omit<DestroyOptions<T>, 'where'> & {
+      transaction?: Transaction;
+      logOptions?: LogOptions;
+    },
   ): Promise<number> {
-    return await this.model.destroy({
+    if (options?.logOptions) {
+      const currentRecord = await this.model.findOne({
+        where,
+        ...options,
+      });
+
+      await this.logAction(LogAction.Delete, (currentRecord as any).code, {
+        transaction: options.transaction,
+        logOptions: options.logOptions,
+      });
+    }
+
+    const result = await this.model.destroy({
       where,
       ...options,
     });
+
+    return result;
   }
 
   public async restore(

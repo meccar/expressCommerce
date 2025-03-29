@@ -1,7 +1,8 @@
 import { BaseModel } from '@common/index';
-import { InferAttributes, InferCreationAttributes } from '@sequelize/core';
+import { InferAttributes, InferCreationAttributes, Model, ModelStatic } from '@sequelize/core';
 
-export type AnyModel = typeof BaseModel<InferAttributes<any>, InferCreationAttributes<any>>;
+// export type AnyModel = typeof BaseModel<InferAttributes<any>, InferCreationAttributes<any>>;
+type AnyModel = ModelStatic<Model>;
 
 export interface InsertLogAuditOptions {
   userAccountCode: string;
