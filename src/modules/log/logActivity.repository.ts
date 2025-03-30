@@ -9,9 +9,9 @@ export class LogActivityRepository extends RootRepository<LogActivity> {
   }
 
   public async addLog(options: InsertLogActivityOptions, transaction?: Transaction): Promise<void> {
-    const sanitizedNewValue = options.newValue
-      ? JSON.parse(JSON.stringify(options.newValue))
-      : null;
+    // const sanitizedNewValue = options.newValue
+    //   ? JSON.parse(JSON.stringify(options.newValue))
+    //   : null;
     const changedValues = this.extractChangedValues(options.oldValue, options.newValue);
 
     await this.create(

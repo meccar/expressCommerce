@@ -1,8 +1,5 @@
-import {
-  InsertLogActivityOptions,
-  InsertLogAuditOptions,
-} from '@infrastructure/interfaces/log.interface';
-import { LogAction } from '@modules/index';
+import { RepositoryEvent, repositoryEventBus } from '@common/index';
+import { LogOptions } from '@modules/log/log.service';
 import {
   CreateOptions,
   CreationAttributes,
@@ -17,93 +14,8 @@ import {
   WhereOptions,
 } from '@sequelize/core';
 
-export interface ILoggerActivity {
-  log(options: {
-    action: number;
-    model: ModelStatic<Model>;
-    code?: string;
-    oldValue?: any;
-    newValue?: any;
-    userAccountCode?: string;
-    transaction?: Transaction;
-  }): Promise<void>;
-}
-
-export interface LogOptions {
-  userAccountCode: string;
-  useActivityLog?: boolean;
-  useAuditLog?: boolean;
-  status?: number;
-  resourceName?: string;
-  resourceField?: string;
-}
-
-export interface ILoggerActivity {
-  addLog(options: InsertLogActivityOptions, transaction?: Transaction): Promise<void>;
-}
-
-export interface ILoggerAudit {
-  addLog(options: InsertLogAuditOptions, transaction?: Transaction): Promise<void>;
-}
-
 export class RootRepository<T extends Model> {
-  constructor(
-    private readonly model: ModelStatic<T>,
-    private readonly loggerActivity?: ILoggerActivity,
-    private readonly loggerAudit?: ILoggerAudit,
-  ) {}
-
-  private async logAction(
-    action: number,
-    code: string | undefined,
-    oldValue?: any,
-    newValue?: any,
-    options?: {
-      transaction?: Transaction;
-      logOptions?: LogOptions;
-    },
-  ): Promise<void> {
-    const promises: Promise<void>[] = [];
-
-    if (!code || !options?.logOptions?.userAccountCode) return;
-
-    if (options?.logOptions?.useActivityLog && this.loggerActivity) {
-      promises.push(
-        this.loggerActivity.addLog(
-          {
-            userAccountCode: options.logOptions.userAccountCode,
-            action,
-            model: this.model,
-            code,
-            oldValue,
-            newValue,
-          },
-          options.transaction,
-        ),
-      );
-    }
-
-    if (options?.logOptions?.useAuditLog && this.loggerAudit) {
-      promises.push(
-        this.loggerAudit.addLog(
-          {
-            userAccountCode: options.logOptions.userAccountCode,
-            action,
-            model: this.model,
-            resourceName: options.logOptions.resourceName || this.model.name,
-            resourceField: options.logOptions.resourceField,
-            status: options.logOptions.status || 1,
-            code,
-          },
-          options.transaction,
-        ),
-      );
-    }
-
-    if (promises.length > 0) {
-      await Promise.all(promises);
-    }
-  }
+  constructor(private readonly model: ModelStatic<T>) {}
 
   public async findAll(options?: FindOptions<T> & { transaction?: Transaction }): Promise<T[]> {
     return await this.model.findAll(options);
@@ -133,11 +45,14 @@ export class RootRepository<T extends Model> {
   ): Promise<T> {
     const [instance, created] = await this.model.findOrCreate(options);
 
-    if (created && options.logOptions)
-      await this.logAction(LogAction.Create, (instance as any).code, {
-        transaction: options.transaction,
-        logOptions: options.logOptions,
+    if (created) {
+      repositoryEventBus.emit(RepositoryEvent.CREATED, {
+        model: this.model,
+        instance,
+        data: options.defaults,
+        options,
       });
+    }
 
     return instance;
   }
@@ -148,11 +63,12 @@ export class RootRepository<T extends Model> {
   ): Promise<T> {
     const newRecord = await this.model.create(data as any, options);
 
-    if (options?.logOptions)
-      await this.logAction(LogAction.Create, (newRecord as any).code, {
-        transaction: options.transaction,
-        logOptions: options.logOptions,
-      });
+    repositoryEventBus.emit(RepositoryEvent.CREATED, {
+      model: this.model,
+      instance: newRecord,
+      data,
+      options,
+    });
 
     return newRecord;
   }
@@ -161,8 +77,8 @@ export class RootRepository<T extends Model> {
     currentRecord: T,
     data: Partial<T>,
     options?: Omit<CreateOptions<T>, 'where'> & {
-      logOptions?: LogOptions;
       transaction?: Transaction;
+      logOptions?: LogOptions;
     },
   ): Promise<T> {
     const currentData = currentRecord.toJSON();
@@ -177,14 +93,16 @@ export class RootRepository<T extends Model> {
       options,
     );
 
-    if (options?.logOptions)
-      await this.logAction(LogAction.Update, (currentRecord as any).code, currentData, data, {
-        transaction: options.transaction,
-        logOptions: options.logOptions,
-      });
-
     await currentRecord.destroy({
       transaction: options?.transaction,
+    });
+
+    repositoryEventBus.emit(RepositoryEvent.UPDATED, {
+      model: this.model,
+      oldInstance: currentRecord,
+      newInstance: newRecord,
+      data,
+      options,
     });
 
     return newRecord;
@@ -197,33 +115,52 @@ export class RootRepository<T extends Model> {
       logOptions?: LogOptions;
     },
   ): Promise<number> {
-    if (options?.logOptions) {
-      const currentRecord = await this.model.findOne({
-        where,
-        ...options,
-      });
-
-      await this.logAction(LogAction.Delete, (currentRecord as any).code, {
-        transaction: options.transaction,
-        logOptions: options.logOptions,
-      });
-    }
+    const currentRecord = options?.logOptions
+      ? await this.model.findOne({ where, ...options })
+      : null;
 
     const result = await this.model.destroy({
       where,
       ...options,
     });
 
+    if (currentRecord) {
+      repositoryEventBus.emit(RepositoryEvent.DELETED, {
+        model: this.model,
+        instance: currentRecord,
+        count: result,
+        options,
+      });
+    }
+
     return result;
   }
 
   public async restore(
     where: WhereOptions<T>,
-    options?: Omit<RestoreOptions<T>, 'where'> & { transaction?: Transaction },
+    options?: Omit<RestoreOptions<T>, 'where'> & {
+      transaction?: Transaction;
+      logOptions?: LogOptions;
+    },
   ): Promise<void> {
-    return await this.model.restore({
+    await this.model.restore({
       where,
       ...options,
     });
+
+    if (options?.logOptions) {
+      const restoredRecord = await this.model.findOne({
+        where,
+        ...options,
+      });
+
+      if (restoredRecord) {
+        repositoryEventBus.emit(RepositoryEvent.RESTORED, {
+          model: this.model,
+          instance: restoredRecord,
+          options,
+        });
+      }
+    }
   }
 }
