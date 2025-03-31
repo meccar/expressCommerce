@@ -10,7 +10,6 @@ export class LogAuditRepository extends RootRepository<LogAudit> {
   }
 
   public async addLog(options: InsertLogAuditOptions, transaction?: Transaction): Promise<void> {
-    
     await this.create(
       {
         userAccountCode: options.userAccountCode,
@@ -18,7 +17,6 @@ export class LogAuditRepository extends RootRepository<LogAudit> {
         status: options.status,
         resourceField: options.resourceField,
         resourceName: options.resourceName,
-        code: options.code,
       },
       { transaction },
     );

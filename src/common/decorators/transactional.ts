@@ -8,12 +8,18 @@ export function Transactional() {
     descriptor.value = async function (...args: any[]) {
       const sequelize = databaseService.sequelize;
 
-      const hasTransaction = args.length > 0 && args[args.length - 1] instanceof Transaction;
+      const lastArg = args.length > 0 ? args[args.length - 1] : null;
+      const hasTransaction = lastArg instanceof Transaction;
 
-      if (hasTransaction) return originalMethod.apply(this, args);
+      if (hasTransaction) {
+        (lastArg as Transaction).afterCommit(() => {});
+        return originalMethod.apply(this, args);
+      }
 
       return sequelize.transaction(async transaction => {
-        const methodArgs = [...args, transaction];
+        const methodArgs = hasTransaction
+          ? [...args.slice(0, -1), transaction]
+          : [...args, transaction];
         return originalMethod.apply(this, methodArgs);
       });
     };

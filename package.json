@@ -5,7 +5,7 @@
   "scripts": {
     "start:dev": "nodemon",
     "start:prod": "cross-env NODE_ENV=production node dist/server.js",
-    "start:debug": "nodemon",
+    "start:debug": "nodemon --verbose",
     "clean": "tsc --build --clean",
     "build": "yarn clean && tsc --build",
     "format": "prettier --write \"src/**/*.ts\"",

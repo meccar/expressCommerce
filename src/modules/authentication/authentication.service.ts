@@ -5,8 +5,10 @@ import {
   BadRequestException,
   compare,
   encrypt,
+  LogActivity,
   NotFoundException,
   Roles,
+  TableNames,
   Transactional,
   Ulid,
   UnauthorizedException,
@@ -27,6 +29,9 @@ import { TokenService } from '@modules/tokens/tokens.service';
 import { MfaService } from '@modules/mfa/mfa.service';
 import { UserClaim, UserClaimRepository } from '@modules/claims';
 import { UserTokenRepository } from '@modules/tokens';
+import { LogOptions } from '@modules/log/log.service';
+import { LogActivityRepository } from '@modules/log/logActivity.repository';
+import { LogAction } from '@modules/userProfile';
 
 export class AuthenticationService {
   private readonly MAX_FAILED_ATTEMPTS = 5;
@@ -36,6 +41,7 @@ export class AuthenticationService {
   private userClaimRepository: UserClaimRepository = new UserClaimRepository();
   private userAccountRepository: UserAccountRepository = new UserAccountRepository();
   private userTokenRepository: UserTokenRepository = new UserTokenRepository();
+  private logActivityRepository: LogActivityRepository = new LogActivityRepository();
   private tokenService: TokenService = new TokenService();
   private mfaService: MfaService = new MfaService();
 
@@ -286,6 +292,17 @@ export class AuthenticationService {
     );
 
     if (!updatedUserAccount) throw new BadRequestException();
+
+    await this.logActivityRepository.addLog(
+      {
+        userAccountCode: userAccount.code,
+        action: LogAction.Update,
+        model: TableNames.UserAccount,
+        newValue: updatedUserAccount,
+        oldValue: userAccount,
+      },
+      transaction,
+    );
 
     const RecoveryUrl = `${CONFIG.SYSTEM.FRONTEND_URL}/recover-email?token=${userAccount.confirmToken}`;
 

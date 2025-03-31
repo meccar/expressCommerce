@@ -2,7 +2,6 @@ import { BaseRoute } from '@common/utils';
 import { AuthenticationService } from './authentication.service';
 import express, { Request, Response } from 'express';
 import { Api, statusCodes } from '@common/index';
-import { validation } from '@gateway/middleware';
 
 export class AuthenticationRoute extends BaseRoute {
   private readonly authenticationService: AuthenticationService;

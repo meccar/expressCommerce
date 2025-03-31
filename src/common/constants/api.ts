@@ -7,6 +7,7 @@ export const Api = {
     mfa: '/mfa',
     seed: '/seed',
     profile: '/profile',
+    log: '/log',
   },
   method: {
     register: '/register',

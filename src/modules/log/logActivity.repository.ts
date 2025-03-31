@@ -2,6 +2,7 @@ import { RootRepository } from '@infrastructure/repository/rootRepository';
 import { LogActivity } from './logActivity.model';
 import { Transaction } from '@sequelize/core';
 import { InsertLogActivityOptions } from '@infrastructure/interfaces/log.interface';
+import { Transactional } from '@common/index';
 
 export class LogActivityRepository extends RootRepository<LogActivity> {
   constructor() {
@@ -19,7 +20,6 @@ export class LogActivityRepository extends RootRepository<LogActivity> {
         userAccountCode: options.userAccountCode,
         action: options.action,
         resourceName: options.model.toString(),
-        code: options.code,
         newValue: JSON.stringify(changedValues.newValues),
         oldValue: JSON.stringify(changedValues.oldValues),
       },

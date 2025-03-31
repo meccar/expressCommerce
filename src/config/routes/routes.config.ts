@@ -6,6 +6,7 @@ import { logger } from '@infrastructure/config';
 // import { KeyRotationRoute } from '@modules/keyRotation/keyRotation.route';
 import { AuthenticationRoute } from '@modules/authentication/authentication.route';
 import { SeedRoute } from '@modules/seed/seed.route';
+// import { LogRoute } from '@modules/log/log.route';
 
 class RoutesConfiguration extends ServiceBase {
   private _app: express.Application | null = null;
@@ -30,6 +31,7 @@ class RoutesConfiguration extends ServiceBase {
     this.registerRoute(UserAccountRoute)
       .registerRoute(AuthenticationRoute)
       .registerRoute(SeedRoute);
+    // .registerRoute(LogRoute)
     // .registerRoute(KeyRotationRoute);
 
     this._routes.forEach(route => {

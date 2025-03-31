@@ -1,5 +1,7 @@
 import { RepositoryEvent, repositoryEventBus } from '@common/index';
 import { LogOptions } from '@modules/log/log.service';
+import { LogActivityRepository } from '@modules/log/logActivity.repository';
+import { LogAuditRepository } from '@modules/log/logAudit.repository';
 import {
   CreateOptions,
   CreationAttributes,
@@ -41,36 +43,18 @@ export class RootRepository<T extends Model> {
   }
 
   public async findOrCreate(
-    options: FindOrCreateOptions<T> & { transaction?: Transaction; logOptions?: LogOptions },
+    options: FindOrCreateOptions<T> & { transaction?: Transaction },
   ): Promise<T> {
     const [instance, created] = await this.model.findOrCreate(options);
-
-    if (created) {
-      repositoryEventBus.emit(RepositoryEvent.CREATED, {
-        model: this.model,
-        instance,
-        data: options.defaults,
-        options,
-      });
-    }
 
     return instance;
   }
 
   public async create(
     data: Partial<T>,
-    options?: CreateOptions<T> & { transaction?: Transaction; logOptions?: LogOptions },
+    options?: CreateOptions<T> & { transaction?: Transaction },
   ): Promise<T> {
-    const newRecord = await this.model.create(data as any, options);
-
-    repositoryEventBus.emit(RepositoryEvent.CREATED, {
-      model: this.model,
-      instance: newRecord,
-      data,
-      options,
-    });
-
-    return newRecord;
+    return await this.model.create(data as any, options);
   }
 
   public async update(
@@ -90,19 +74,11 @@ export class RootRepository<T extends Model> {
         version: (currentData.version || 0) + 1,
         id: undefined,
       },
-      options,
+      { transaction: options?.transaction },
     );
 
     await currentRecord.destroy({
       transaction: options?.transaction,
-    });
-
-    repositoryEventBus.emit(RepositoryEvent.UPDATED, {
-      model: this.model,
-      oldInstance: currentRecord,
-      newInstance: newRecord,
-      data,
-      options,
     });
 
     return newRecord;
@@ -115,25 +91,10 @@ export class RootRepository<T extends Model> {
       logOptions?: LogOptions;
     },
   ): Promise<number> {
-    const currentRecord = options?.logOptions
-      ? await this.model.findOne({ where, ...options })
-      : null;
-
-    const result = await this.model.destroy({
+      return await this.model.destroy({
       where,
       ...options,
     });
-
-    if (currentRecord) {
-      repositoryEventBus.emit(RepositoryEvent.DELETED, {
-        model: this.model,
-        instance: currentRecord,
-        count: result,
-        options,
-      });
-    }
-
-    return result;
   }
 
   public async restore(
@@ -147,20 +108,5 @@ export class RootRepository<T extends Model> {
       where,
       ...options,
     });
-
-    if (options?.logOptions) {
-      const restoredRecord = await this.model.findOne({
-        where,
-        ...options,
-      });
-
-      if (restoredRecord) {
-        repositoryEventBus.emit(RepositoryEvent.RESTORED, {
-          model: this.model,
-          instance: restoredRecord,
-          options,
-        });
-      }
-    }
   }
 }

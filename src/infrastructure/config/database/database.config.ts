@@ -13,6 +13,9 @@ import {
 import { Environments } from '@common/index';
 import { CONFIG } from '@config/index';
 import { logger } from '@infrastructure/index';
+import { LogActivity } from '@modules/log/logActivity.model';
+import { LogAudit } from '@modules/log/logAudit.model';
+import { LogSystem } from '@modules/log/logSystem.model';
 
 const models = [
   UserClaim,
@@ -23,6 +26,9 @@ const models = [
   UserRole,
   UserAccount,
   UserProfile,
+  LogActivity,
+  LogAudit,
+  LogSystem,
 ];
 
 type LoggingFunction = (sql: string, timing?: number) => void;

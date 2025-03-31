@@ -5,10 +5,12 @@ import {
   InferCreationAttributes,
   CreationOptional,
   DataTypes,
+  sql,
 } from '@sequelize/core';
 import {
   Attribute,
   AutoIncrement,
+  Default,
   NotNull,
   PrimaryKey,
   Table,
@@ -38,8 +40,9 @@ export class LogActivity extends Model<
   @NotNull
   declare resourceName: string;
 
-  @Attribute(DataTypes.INTEGER)
+  @Attribute(DataTypes.UUID.V1)
   @NotNull
+  @Default(sql.uuidV1)
   declare code: string;
 
   @Attribute(DataTypes.JSON)

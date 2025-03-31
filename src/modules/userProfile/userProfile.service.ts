@@ -32,18 +32,6 @@ export class UserProfileSerivce {
 
     if (!isUserActive) throw new NotFoundException('User is not active');
 
-    await this.logActivityRepository.addLog(
-      {
-        userAccountCode: userProfile.userAccountCode,
-        action: LogAction.Update,
-        model: UserProfile,
-        code: userProfile.code,
-        newValue: userProfileData,
-        oldValue: userProfile,
-      },
-      transaction,
-    );
-
     return this.userProfileRepository.update(userProfile, userProfileData, { transaction });
   }
 }
