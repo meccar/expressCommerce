@@ -11,3 +11,4 @@ export * from './roles';
 export * from './baseTableOptions';
 export * from './methods';
 export * from './events';
+export * from './log';

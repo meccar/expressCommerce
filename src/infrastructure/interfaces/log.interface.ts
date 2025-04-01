@@ -1,4 +1,4 @@
-import { BaseModel, TableNames } from '@common/index';
+import { BaseModel, LogStatus, TableNames } from '@common/index';
 import { InferAttributes, InferCreationAttributes, Model, ModelStatic } from '@sequelize/core';
 
 export type AnyModel = typeof BaseModel<InferAttributes<any>, InferCreationAttributes<any>>;
@@ -10,7 +10,7 @@ export interface InsertLogAuditOptions {
   model: TableNames;
   resourceName: string;
   resourceField?: string;
-  status: number;
+  status: LogStatus;
 }
 
 export interface InsertLogActivityOptions {

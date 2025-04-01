@@ -5,7 +5,8 @@ import {
   BadRequestException,
   compare,
   encrypt,
-  LogActivity,
+  LogAction,
+  LogStatus,
   NotFoundException,
   Roles,
   TableNames,
@@ -31,7 +32,8 @@ import { UserClaim, UserClaimRepository } from '@modules/claims';
 import { UserTokenRepository } from '@modules/tokens';
 import { LogOptions } from '@modules/log/log.service';
 import { LogActivityRepository } from '@modules/log/logActivity.repository';
-import { LogAction } from '@modules/userProfile';
+import { LogAuditRepository } from '@modules/log/logAudit.repository';
+import { InsertLogAuditOptions } from '@infrastructure/interfaces/log.interface';
 
 export class AuthenticationService {
   private readonly MAX_FAILED_ATTEMPTS = 5;
@@ -42,6 +44,7 @@ export class AuthenticationService {
   private userAccountRepository: UserAccountRepository = new UserAccountRepository();
   private userTokenRepository: UserTokenRepository = new UserTokenRepository();
   private logActivityRepository: LogActivityRepository = new LogActivityRepository();
+  private logAuditRepository: LogAuditRepository = new LogAuditRepository();
   private tokenService: TokenService = new TokenService();
   private mfaService: MfaService = new MfaService();
 
@@ -119,9 +122,22 @@ export class AuthenticationService {
     if (!existingUser)
       throw new UnauthorizedException('Either email, username or password is incorrect');
 
+    const audit = await this.logAuditRepository.addLog(
+      {
+        userAccountCode: existingUser.code,
+        action: LogAction.Update,
+        model: TableNames.UserLogin,
+        resourceName: TableNames.UserLogin,
+      },
+      transaction,
+    );
+
     const signInResult = await this.passwordSignInAsync(existingUser, password, transaction);
 
-    if (!signInResult.succeeded) throw new UnauthorizedException(signInResult.message);
+    if (!signInResult.succeeded) {
+      await audit.log(LogStatus.Denied);
+      throw new UnauthorizedException(signInResult.message);
+    }
 
     await this.userLoginRepository.signInWithClaimsAsync(
       existingUser.code,
@@ -130,6 +146,7 @@ export class AuthenticationService {
       'Local',
       transaction,
     );
+
     const tokenCode = Ulid.generateUlid();
     const tokens = await this.tokenService.generateTokenPair(existingUser, tokenCode, {
       expiresIn: isPersistent ? '1d' : '15m',
@@ -138,16 +155,30 @@ export class AuthenticationService {
 
     await this.tokenService.storeToken(existingUser.code, 'JWT', 'JWT', tokenCode, transaction);
 
+    await audit.log(LogStatus.Success);
+
     return tokens;
   }
 
   @Transactional()
   public async logout(logoutData: any, user: any, transaction?: Transaction): Promise<any> {
     if (!user || !logoutData?.trim()) throw new UnauthorizedException();
+    const audit = await this.logAuditRepository.addLog(
+      {
+        userAccountCode: user.code,
+        action: LogAction.Update,
+        model: TableNames.UserLogin,
+        resourceName: TableNames.UserLogin,
+      },
+      transaction,
+    );
 
     const decoded = this.tokenService.verifyAccessToken(logoutData);
 
-    if (decoded.code !== user.code) throw new UnauthorizedException();
+    if (decoded.code !== user.code) {
+      await audit.log(LogStatus.Denied);
+      throw new UnauthorizedException();
+    }
 
     const revokeToken = await this.tokenService.revokeUserTokensByToken(
       decoded.tokenCode,
@@ -155,6 +186,8 @@ export class AuthenticationService {
     );
 
     if (revokeToken < 1) throw new UnauthorizedException();
+
+    await audit.log(LogStatus.Success);
 
     return { message: 'Logged out successfully' };
   }
@@ -166,6 +199,200 @@ export class AuthenticationService {
     if (!refreshToken?.trim()) throw new UnauthorizedException();
 
     return await this.tokenService.refreshToken(refreshToken, transaction);
+  }
+
+  @Transactional()
+  public async confirmEmail(token: string, transaction?: Transaction): Promise<any> {
+    if (!token) throw new UnauthorizedException();
+
+    const isTokenExpired = await Ulid.isExpired(token, CONFIG.SYSTEM.EMAIL_TOKEN_EXPIRY);
+    if (isTokenExpired) throw new UnauthorizedException('Invalid or expired verification token');
+
+    const userAccount = await this.userAccountRepository.findUserByToken(token);
+
+    if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
+
+    const audit = await this.logAuditRepository.addLog(
+      {
+        userAccountCode: userAccount.code,
+        action: LogAction.Update,
+        model: TableNames.UserLogin,
+        resourceName: TableNames.UserLogin,
+      },
+      transaction,
+    );
+
+    const updatedUserAccount = await this.userAccountRepository.update(
+      userAccount,
+      {
+        isActive: true,
+        emailConfirmed: true,
+      },
+      { transaction },
+    );
+    if (!updatedUserAccount) throw new BadRequestException();
+
+    if (!userAccount.twoFactorEnabled) {
+      await audit.log(LogStatus.Denied);
+      throw new UnauthorizedException('Two-factor authentication required');
+    }
+
+    const updateEmailConfirmedClaim = await this.userClaimRepository.updateEmailConfirmedClaim(
+      userAccount.code,
+      'true',
+      transaction,
+    );
+    if (!updateEmailConfirmedClaim) throw new BadRequestException();
+
+    const roleClaim: IUserClaim = {
+      type: 'Role',
+      value: Roles.User,
+    };
+
+    await this.userClaimRepository.addClaim(
+      userAccount.code,
+      roleClaim.type,
+      roleClaim.value,
+      transaction,
+    );
+
+    const userProvider: IUserProvider = {
+      name: 'Email Account',
+      provider: 'Email',
+      providerKey: userAccount.email,
+    };
+
+    await this.userTokenRepository.addUserToken(
+      userAccount.code,
+      userProvider.provider,
+      userProvider.name!,
+      userProvider.providerKey,
+      transaction,
+    );
+
+    await audit.log(LogStatus.Success);
+
+    return { message: 'Email verified successfully' };
+  }
+
+  @Transactional()
+  public async resetPasswordRequest(email: string, transaction?: Transaction): Promise<any> {
+    const userAccount = await this.userAccountRepository.findOne({
+      where: {
+        email,
+      },
+    });
+
+    if (!userAccount) throw new UnauthorizedException();
+
+    const audit = await this.logAuditRepository.addLog(
+      {
+        userAccountCode: userAccount.code,
+        action: LogAction.Update,
+        model: TableNames.UserLogin,
+        resourceName: TableNames.UserLogin,
+      },
+      transaction,
+    );
+
+    const updatedUserAccount = await this.userAccountRepository.update(
+      userAccount,
+      {
+        passwordRecoveryToken: Ulid.generateUlid(),
+      },
+      { transaction },
+    );
+
+    if (!updatedUserAccount) throw new BadRequestException();
+
+    await this.logActivityRepository.addLog(
+      {
+        userAccountCode: userAccount.code,
+        action: LogAction.Update,
+        model: TableNames.UserAccount,
+        newValue: updatedUserAccount,
+        oldValue: userAccount,
+      },
+      transaction,
+    );
+
+    const RecoveryUrl = `${CONFIG.SYSTEM.FRONTEND_URL}/recover-email?token=${userAccount.confirmToken}`;
+
+    await mailService.send(email, 'Reset password', 'email-recovery', {
+      username: userAccount.username ?? email,
+      RecoveryUrl,
+    });
+
+    await audit.log(LogStatus.Success);
+  }
+
+  @Transactional()
+  public async resetPassword(
+    resetPasswordData: any,
+    token: string,
+    transaction?: Transaction,
+  ): Promise<any> {
+    let { password } = resetPasswordData || {};
+
+    if (!token || !password?.trim()) throw new UnauthorizedException();
+
+    const isTokenExpired = await Ulid.isExpired(token, CONFIG.SYSTEM.REFRESH_PASSWORD_TOKEN_EXPIRY);
+    if (isTokenExpired) throw new UnauthorizedException('Invalid or expired verification token');
+
+    const userAccount = await this.userAccountRepository.findUserByToken(token);
+
+    if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
+
+    const audit = await this.logAuditRepository.addLog(
+      {
+        userAccountCode: userAccount.code,
+        action: LogAction.Update,
+        model: TableNames.UserLogin,
+        resourceName: TableNames.UserLogin,
+      },
+      transaction,
+    );
+
+    const hashedPassword = await encrypt(
+      password,
+      CONFIG.SYSTEM.ENCRYPT_SENSITIVE_SECRET_KEY!,
+      true,
+    );
+
+    const updatedUserAccount = await this.userAccountRepository.update(
+      userAccount,
+      {
+        password: hashedPassword,
+        passwordRecoveryToken: null,
+      },
+      { transaction },
+    );
+
+    if (!updatedUserAccount) throw new BadRequestException();
+
+    await this.logActivityRepository.addLog(
+      {
+        userAccountCode: userAccount.code,
+        action: LogAction.Update,
+        model: TableNames.UserAccount,
+        newValue: updatedUserAccount,
+        oldValue: userAccount,
+      },
+      transaction,
+    );
+
+    password = '';
+    resetPasswordData.password = '';
+
+    await audit.log(LogStatus.Success);
+  }
+
+  public async verifyToken(token: string): Promise<boolean> {
+    const userAccount = await this.userAccountRepository.findUserByToken(token);
+
+    if (!userAccount) throw new UnauthorizedException();
+
+    return true;
   }
 
   public async generateTwoFactorSecret(token: string, transaction?: Transaction): Promise<any> {
@@ -211,151 +438,6 @@ export class AuthenticationService {
     transaction?: Transaction,
   ): Promise<any> {
     return this.mfaService.disableSecret(data, user, transaction);
-  }
-
-  @Transactional()
-  public async confirmEmail(token: string, transaction?: Transaction): Promise<any> {
-    if (!token) throw new UnauthorizedException();
-
-    const isTokenExpired = await Ulid.isExpired(token, CONFIG.SYSTEM.EMAIL_TOKEN_EXPIRY);
-    if (isTokenExpired) throw new UnauthorizedException('Invalid or expired verification token');
-
-    const userAccount = await this.userAccountRepository.findUserByToken(token);
-
-    if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
-
-    const updatedUserAccount = await this.userAccountRepository.update(
-      userAccount,
-      {
-        isActive: true,
-        emailConfirmed: true,
-      },
-      { transaction },
-    );
-    if (!updatedUserAccount) throw new BadRequestException();
-
-    if (!userAccount.twoFactorEnabled)
-      throw new BadRequestException('Two-factor authentication required');
-
-    const updateEmailConfirmedClaim = await this.userClaimRepository.updateEmailConfirmedClaim(
-      userAccount.code,
-      'true',
-      transaction,
-    );
-    if (!updateEmailConfirmedClaim) throw new BadRequestException();
-
-    const roleClaim: IUserClaim = {
-      type: 'Role',
-      value: Roles.User,
-    };
-
-    await this.userClaimRepository.addClaim(
-      userAccount.code,
-      roleClaim.type,
-      roleClaim.value,
-      transaction,
-    );
-
-    const userProvider: IUserProvider = {
-      name: 'Email Account',
-      provider: 'Email',
-      providerKey: userAccount.email,
-    };
-
-    await this.userTokenRepository.addUserToken(
-      userAccount.code,
-      userProvider.provider,
-      userProvider.name!,
-      userProvider.providerKey,
-      transaction,
-    );
-
-    return { message: 'Email verified successfully' };
-  }
-
-  @Transactional()
-  public async resetPasswordRequest(email: string, transaction?: Transaction): Promise<any> {
-    const userAccount = await this.userAccountRepository.findOne({
-      where: {
-        email,
-      },
-    });
-
-    if (!userAccount) throw new UnauthorizedException();
-
-    const updatedUserAccount = await this.userAccountRepository.update(
-      userAccount,
-      {
-        passwordRecoveryToken: Ulid.generateUlid(),
-      },
-      { transaction },
-    );
-
-    if (!updatedUserAccount) throw new BadRequestException();
-
-    await this.logActivityRepository.addLog(
-      {
-        userAccountCode: userAccount.code,
-        action: LogAction.Update,
-        model: TableNames.UserAccount,
-        newValue: updatedUserAccount,
-        oldValue: userAccount,
-      },
-      transaction,
-    );
-
-    const RecoveryUrl = `${CONFIG.SYSTEM.FRONTEND_URL}/recover-email?token=${userAccount.confirmToken}`;
-
-    await mailService.send(email, 'Reset password', 'email-recovery', {
-      username: userAccount.username ?? email,
-      RecoveryUrl,
-    });
-  }
-
-  @Transactional()
-  public async resetPassword(
-    resetPasswordData: any,
-    token: string,
-    transaction?: Transaction,
-  ): Promise<any> {
-    let { password } = resetPasswordData || {};
-
-    if (!token || !password?.trim()) throw new UnauthorizedException();
-
-    const isTokenExpired = await Ulid.isExpired(token, CONFIG.SYSTEM.REFRESH_PASSWORD_TOKEN_EXPIRY);
-    if (isTokenExpired) throw new UnauthorizedException('Invalid or expired verification token');
-
-    const userAccount = await this.userAccountRepository.findUserByToken(token);
-
-    if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
-
-    const hashedPassword = await encrypt(
-      password,
-      CONFIG.SYSTEM.ENCRYPT_SENSITIVE_SECRET_KEY!,
-      true,
-    );
-
-    const updatedUserAccount = await this.userAccountRepository.update(
-      userAccount,
-      {
-        password: hashedPassword,
-        passwordRecoveryToken: null,
-      },
-      { transaction },
-    );
-
-    if (!updatedUserAccount) throw new BadRequestException();
-
-    password = '';
-    resetPasswordData.password = '';
-  }
-
-  public async verifyToken(token: string): Promise<boolean> {
-    const userAccount = await this.userAccountRepository.findUserByToken(token);
-
-    if (!userAccount) throw new UnauthorizedException();
-
-    return true;
   }
 
   private async passwordSignInAsync(
