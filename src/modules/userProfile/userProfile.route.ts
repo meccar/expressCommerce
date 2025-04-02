@@ -13,13 +13,14 @@ export class UserProfileRoute extends BaseRoute {
   }
 
   private initializeRoutes(): void {
-    this.publicRoute('patch', this.update, '/:profileCode');
+    this.protectedRoute('patch', this.update, '/:profileCode');
   }
 
   private async update(req: Request, res: Response): Promise<void> {
     const { profileCode } = req.params;
     const profileData = req.body;
-    const result = await this.userProfileSerivce.update(profileCode, profileData);
+    const user = req.user;
+    const result = await this.userProfileSerivce.update(profileCode, profileData, user);
     res.success(result, statusCodes.OK);
   }
 }

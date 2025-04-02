@@ -5,6 +5,7 @@ import { BadRequestException, NotFoundException } from '@common/exceptions';
 import { UserAccountRepository } from '@modules/userAccount';
 import { LogActivityRepository } from '@modules/log/logActivity.repository';
 import { UserProfile } from './userProfile.model';
+import { LogAction, TableNames } from '@common/index';
 
 export class UserProfileSerivce {
   private userProfileRepository: UserProfileRepository = new UserProfileRepository();
@@ -17,6 +18,7 @@ export class UserProfileSerivce {
   public async update(
     profileCode: string,
     userProfileData: any,
+    user: any,
     transaction?: Transaction,
   ): Promise<any> {
     if (!profileCode) throw new BadRequestException();
@@ -32,8 +34,23 @@ export class UserProfileSerivce {
 
     if (!isUserActive) throw new NotFoundException('User is not active');
 
-    return this.userProfileRepository.update(userProfile, userProfileData, { transaction });
+    const result = await this.userProfileRepository.update(userProfile, userProfileData, {
+      transaction,
+    });
+
+    if (!result) throw new BadRequestException();
+
+    await this.logActivityRepository.addLog(
+      {
+        userAccountCode: user.code,
+        action: LogAction.Update,
+        model: TableNames.UserProfile,
+        newValue: result,
+        oldValue: userProfile,
+      },
+      transaction,
+    );
+
+    return result;
   }
 }
-
-

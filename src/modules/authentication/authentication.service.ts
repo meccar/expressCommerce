@@ -153,7 +153,14 @@ export class AuthenticationService {
       isPersistent,
     });
 
-    await this.tokenService.storeToken(existingUser.code, 'JWT', 'JWT', tokenCode, transaction);
+    const userToken = await this.tokenService.storeToken(
+      existingUser.code,
+      'JWT',
+      'JWT',
+      tokenCode,
+      transaction,
+    );
+    if (!userToken) throw new BadRequestException();
 
     await audit.log(LogStatus.Success);
 
@@ -198,7 +205,23 @@ export class AuthenticationService {
 
     if (!refreshToken?.trim()) throw new UnauthorizedException();
 
-    return await this.tokenService.refreshToken(refreshToken, transaction);
+    const result = await this.tokenService.refreshToken(refreshToken, transaction);
+
+    if (!result.accessToken || !result.refreshToken) throw new BadRequestException();
+
+    const audit = await this.logAuditRepository.addLog(
+      {
+        userAccountCode: result.user.code,
+        action: LogAction.Update,
+        model: TableNames.Role,
+        resourceName: TableNames.Role,
+      },
+      transaction,
+    );
+
+    await audit.log(LogStatus.Success);
+
+    return { accessToken: result.accessToken, refreshToken: result.refreshToken };
   }
 
   @Transactional()
@@ -387,14 +410,7 @@ export class AuthenticationService {
     await audit.log(LogStatus.Success);
   }
 
-  public async verifyToken(token: string): Promise<boolean> {
-    const userAccount = await this.userAccountRepository.findUserByToken(token);
-
-    if (!userAccount) throw new UnauthorizedException();
-
-    return true;
-  }
-
+  @Transactional()
   public async generateTwoFactorSecret(token: string, transaction?: Transaction): Promise<any> {
     if (!token) throw new UnauthorizedException();
 
@@ -406,17 +422,50 @@ export class AuthenticationService {
 
     if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
 
-    return await this.mfaService.generateSecret(userAccount, transaction);
+    const audit = await this.logAuditRepository.addLog(
+      {
+        userAccountCode: userAccount.code,
+        action: LogAction.Update,
+        model: TableNames.UserLogin,
+        resourceName: TableNames.UserLogin,
+      },
+      transaction,
+    );
+
+    const result = await this.mfaService.generateSecret(userAccount, transaction);
+
+    if (!result) throw new BadRequestException();
+
+    await audit.log(LogStatus.Success);
+
+    return result;
   }
 
+  @Transactional()
   public async verifyTwoFactorSecret(
     data: any,
     user: any,
     transaction?: Transaction,
   ): Promise<any> {
-    return this.mfaService.verifySecret(data, user, transaction);
+    const audit = await this.logAuditRepository.addLog(
+      {
+        userAccountCode: user.code,
+        action: LogAction.Update,
+        model: TableNames.UserLogin,
+        resourceName: TableNames.UserLogin,
+      },
+      transaction,
+    );
+
+    const result = await this.mfaService.verifySecret(data, user, transaction);
+    if (!result) throw new BadRequestException();
+
+    await audit.log(LogStatus.Success);
+
+    return result;
   }
 
+  @Transactional()
   public async validateTwoFactorSecret(mfaData: any, transaction?: Transaction): Promise<any> {
     const { token, mfaToken } = mfaData || {};
     if (!token?.trim() || !mfaToken?.trim()) throw new UnauthorizedException();
@@ -429,15 +478,54 @@ export class AuthenticationService {
 
     if (!userAccount) throw new UnauthorizedException('Invalid or expired verification token');
 
-    return this.mfaService.validateToken(mfaToken, userAccount, transaction);
+    const audit = await this.logAuditRepository.addLog(
+      {
+        userAccountCode: userAccount.code,
+        action: LogAction.Update,
+        model: TableNames.UserLogin,
+        resourceName: TableNames.UserLogin,
+      },
+      transaction,
+    );
+
+    const result = await this.mfaService.validateToken(mfaToken, userAccount, transaction);
+    if (!result) throw new BadRequestException();
+
+    await audit.log(LogStatus.Success);
+
+    return result;
   }
 
+  @Transactional()
   public async disableTwoFactorSecret(
     data: any,
     user: any,
     transaction?: Transaction,
   ): Promise<any> {
-    return this.mfaService.disableSecret(data, user, transaction);
+    const audit = await this.logAuditRepository.addLog(
+      {
+        userAccountCode: user.code,
+        action: LogAction.Update,
+        model: TableNames.UserLogin,
+        resourceName: TableNames.UserLogin,
+      },
+      transaction,
+    );
+
+    const result = await this.mfaService.disableSecret(data, user, transaction);
+    if (!result) throw new BadRequestException();
+
+    await audit.log(LogStatus.Success);
+
+    return result;
+  }
+
+  public async verifyToken(token: string): Promise<boolean> {
+    const userAccount = await this.userAccountRepository.findUserByToken(token);
+
+    if (!userAccount) throw new UnauthorizedException();
+
+    return true;
   }
 
   private async passwordSignInAsync(

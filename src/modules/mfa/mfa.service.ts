@@ -5,7 +5,6 @@ import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 
 export class MfaService {
-  @Transactional()
   public async generateSecret(user: any, transaction?: Transaction): Promise<any> {
     if (!user) throw new UnauthorizedException();
     if (user.twoFactorEnabled) throw new BadRequestException();
@@ -33,7 +32,6 @@ export class MfaService {
     });
   }
 
-  @Transactional()
   public async verifySecret(
     twoFactorSecretData: any,
     user: any,
@@ -52,7 +50,6 @@ export class MfaService {
     return { message: '2FA is verified' };
   }
 
-  @Transactional()
   public async validateToken(mfaToken: any, user: any, transaction?: Transaction): Promise<any> {
     if (!user || !mfaToken) throw new UnauthorizedException();
     if (user.twoFactorEnabled || user.isTwoFactorVerified) throw new BadRequestException();
@@ -67,7 +64,6 @@ export class MfaService {
     return { message: '2FA is valid' };
   }
 
-  @Transactional()
   public async disableSecret(
     twoFactorSecretData: any,
     user: any,

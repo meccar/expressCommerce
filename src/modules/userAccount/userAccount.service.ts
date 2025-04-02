@@ -2,7 +2,10 @@ import { IUserClaim, IUserProvider, mailService } from '@infrastructure/index';
 import {
   BadRequestException,
   encrypt,
+  LogAction,
+  LogStatus,
   Roles,
+  TableNames,
   Transactional,
   Ulid,
   UnauthorizedException,
@@ -16,6 +19,7 @@ import { UserRoleRepository } from '@modules/authorization/userRole.repository';
 import { RoleRepository } from '@modules/authorization';
 import speakeasy from 'speakeasy';
 import { AuthorizationService } from '@modules/authorization/authorization.service';
+import { LogAuditRepository } from '@modules/log/logAudit.repository';
 
 export class UserAccountService {
   private userProfileRepository: UserProfileRepository = new UserProfileRepository();
@@ -23,6 +27,8 @@ export class UserAccountService {
   private userClaimRepository: UserClaimRepository = new UserClaimRepository();
   private userRoleRepository: UserRoleRepository = new UserRoleRepository();
   private roleRepository: RoleRepository = new RoleRepository();
+  private logAuditRepository: LogAuditRepository = new LogAuditRepository();
+
   private authorizationService: AuthorizationService = new AuthorizationService();
   constructor() {}
 
@@ -54,6 +60,16 @@ export class UserAccountService {
 
     if (!userAccount) throw new BadRequestException();
 
+    const audit = await this.logAuditRepository.addLog(
+      {
+        userAccountCode: userAccount.code,
+        action: LogAction.Update,
+        model: TableNames.UserAccount,
+        resourceName: TableNames.UserAccount,
+      },
+      transaction,
+    );
+
     const userProfile = await this.userProfileRepository.createProfileByUserAccountCode(
       userAccount.code,
       transaction,
@@ -77,6 +93,8 @@ export class UserAccountService {
       username: username ?? email,
       verificationUrl,
     });
+
+    await audit.log(LogStatus.Success);
 
     return {
       user: userAccount.toJSON(),
@@ -127,6 +145,16 @@ export class UserAccountService {
       { transaction }!,
     );
 
+    const audit = await this.logAuditRepository.addLog(
+      {
+        userAccountCode: user.code,
+        action: LogAction.Update,
+        model: TableNames.UserAccount,
+        resourceName: TableNames.UserAccount,
+      },
+      transaction,
+    );
+
     password = '';
     userData.password = '';
 
@@ -151,6 +179,8 @@ export class UserAccountService {
       'true',
       transaction,
     );
+
+    await audit.log(LogStatus.Success);
 
     return {
       user: userAccount.toJSON(),

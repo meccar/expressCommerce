@@ -1,4 +1,4 @@
-import { BadRequestException, Transactional, Ulid, UnauthorizedException } from '@common/index';
+import { BadRequestException, Ulid, UnauthorizedException } from '@common/index';
 import { CONFIG } from '@config/index';
 import { JwtAccessPayload, JwtRefreshPayload } from '@infrastructure/index';
 import { UserToken } from '@modules/authentication';
@@ -24,7 +24,6 @@ export class TokenService {
     );
   }
 
-  @Transactional()
   public async storeRefreshToken(
     userAccountCode: string,
     token: string,
@@ -33,7 +32,6 @@ export class TokenService {
     return this.storeToken(userAccountCode, 'JWT', 'JWT', token, transaction);
   }
 
-  @Transactional()
   public async storeToken(
     userAccountCode: string,
     loginProvider: string = 'JWT',
@@ -52,7 +50,6 @@ export class TokenService {
     );
   }
 
-  @Transactional()
   public async updateToken(
     userAccountCode: string,
     loginProvider: string = 'JWT',
@@ -73,7 +70,6 @@ export class TokenService {
     );
   }
 
-  @Transactional()
   public async revokeUserTokensByUserAccountCode(
     userAccountCode: string,
     transaction?: Transaction,
@@ -81,16 +77,14 @@ export class TokenService {
     return await this.userTokenRepository.softDelete({ userAccountCode }, { transaction });
   }
 
-  @Transactional()
   public async revokeUserTokensByToken(token: string, transaction?: Transaction): Promise<number> {
     return await this.userTokenRepository.softDelete({ value: token }, { transaction });
   }
 
-  @Transactional()
   public async refreshToken(
     refreshToken: string,
     transaction?: Transaction,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  ): Promise<{ user: any; accessToken: string; refreshToken: string }> {
     const decoded = this.verifyRefreshToken(refreshToken);
 
     const [storedToken, user] = await Promise.all([
@@ -116,15 +110,19 @@ export class TokenService {
 
       if (!updateToken) throw new BadRequestException();
 
-      return await this.generateTokenPair(user, tokenCode, {
+      const result = await this.generateTokenPair(user, tokenCode, {
         isPersistent: decoded.persistent,
       });
+      const { accessToken, refreshToken } = result;
+
+      return { user, accessToken, refreshToken };
     }
 
     const accessToken = await this.generateAccessToken(user, decoded.tokenCode, {
       isPersistent: decoded.persistent,
     });
-    return { accessToken, refreshToken };
+
+    return { user, accessToken, refreshToken };
   }
 
   public async generateAccessToken(

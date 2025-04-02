@@ -35,7 +35,8 @@ export class AuthorizationRoute extends BaseRoute {
    */
   private async createRole(req: Request, res: Response): Promise<void> {
     const roleData = req.body;
-    const result = await this.authorizationService.createRole(roleData);
+    const user = req.user;
+    const result = await this.authorizationService.createRole(roleData, user);
     res.success(result, statusCodes.CREATED);
   }
 
@@ -104,7 +105,8 @@ export class AuthorizationRoute extends BaseRoute {
   private async deleteRole(req: Request, res: Response): Promise<void> {
     const { roleCode } = req.params;
     // const { roleCode } = req.query;
-    const result = await this.authorizationService.deleteRole(roleCode);
+    const user = req.user;
+    const result = await this.authorizationService.deleteRole(roleCode, user);
 
     res.success(
       {
@@ -138,7 +140,8 @@ export class AuthorizationRoute extends BaseRoute {
     const { roleCode } = req.params;
     // const { roleCode } = req.query;
     const roleData = req.body;
-    const result = await this.authorizationService.updateRole(roleCode, roleData);
+    const user = req.user;
+    const result = await this.authorizationService.updateRole(roleCode, roleData, user);
     res.success(result, statusCodes.OK);
   }
 }
