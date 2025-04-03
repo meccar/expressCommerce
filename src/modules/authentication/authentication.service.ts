@@ -30,10 +30,8 @@ import { TokenService } from '@modules/tokens/tokens.service';
 import { MfaService } from '@modules/mfa/mfa.service';
 import { UserClaim, UserClaimRepository } from '@modules/claims';
 import { UserTokenRepository } from '@modules/tokens';
-import { LogOptions } from '@modules/log/log.service';
 import { LogActivityRepository } from '@modules/log/logActivity.repository';
 import { LogAuditRepository } from '@modules/log/logAudit.repository';
-import { InsertLogAuditOptions } from '@infrastructure/interfaces/log.interface';
 
 export class AuthenticationService {
   private readonly MAX_FAILED_ATTEMPTS = 5;
@@ -308,16 +306,6 @@ export class AuthenticationService {
 
     if (!userAccount) throw new UnauthorizedException();
 
-    const audit = await this.logAuditRepository.addLog(
-      {
-        userAccountCode: userAccount.code,
-        action: LogAction.Update,
-        model: TableNames.UserLogin,
-        resourceName: TableNames.UserLogin,
-      },
-      transaction,
-    );
-
     const updatedUserAccount = await this.userAccountRepository.update(
       userAccount,
       {
@@ -345,8 +333,6 @@ export class AuthenticationService {
       username: userAccount.username ?? email,
       RecoveryUrl,
     });
-
-    await audit.log(LogStatus.Success);
   }
 
   @Transactional()
