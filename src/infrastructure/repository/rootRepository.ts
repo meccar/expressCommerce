@@ -1,10 +1,5 @@
-import { RepositoryEvent, repositoryEventBus } from '@common/index';
-import { LogOptions } from '@modules/log/log.service';
-import { LogActivityRepository } from '@modules/log/logActivity.repository';
-import { LogAuditRepository } from '@modules/log/logAudit.repository';
 import {
   CreateOptions,
-  CreationAttributes,
   DestroyOptions,
   FindOptions,
   FindOrCreateOptions,
@@ -60,9 +55,8 @@ export class RootRepository<T extends Model> {
   public async update(
     currentRecord: T,
     data: Partial<T>,
-    options?: Omit<CreateOptions<T>, 'where'> & {
+    options?: Omit<UpdateOptions<T>, 'where'> & {
       transaction?: Transaction;
-      logOptions?: LogOptions;
     },
   ): Promise<T> {
     const currentData = currentRecord.toJSON();
@@ -88,10 +82,9 @@ export class RootRepository<T extends Model> {
     where: WhereOptions<T>,
     options?: Omit<DestroyOptions<T>, 'where'> & {
       transaction?: Transaction;
-      logOptions?: LogOptions;
     },
   ): Promise<number> {
-      return await this.model.destroy({
+    return await this.model.destroy({
       where,
       ...options,
     });
@@ -101,7 +94,6 @@ export class RootRepository<T extends Model> {
     where: WhereOptions<T>,
     options?: Omit<RestoreOptions<T>, 'where'> & {
       transaction?: Transaction;
-      logOptions?: LogOptions;
     },
   ): Promise<void> {
     await this.model.restore({

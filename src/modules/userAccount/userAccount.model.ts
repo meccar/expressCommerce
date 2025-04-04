@@ -1,4 +1,3 @@
-import { BaseModel, TableNames, Ulid } from '@common/index';
 import {
   CreationOptional,
   DataTypes,
@@ -27,6 +26,8 @@ import {
   Min,
   NotEmpty,
 } from '@sequelize/validator.js';
+
+import { BaseModel, TableNames, Ulid } from '@common/index';
 
 @Table({
   tableName: TableNames.UserAccount,
