@@ -1,0 +1,6 @@
+{
+  "require": ["ts-node/register/transpile-only", "tsconfig-paths/register"],
+  "extension": ["ts"],
+  "node": "--loader=ts-node/esm",
+  "node-option": ["experimental-specifier-resolution=node", "no-warnings"]
+}
