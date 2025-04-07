@@ -18,7 +18,7 @@ class RoutesConfiguration extends ServiceBase {
     this._apiBasePath = `/${Api.apiRoot}/${CONFIG.API.API_VERSION}`;
   }
 
-  public registerRoute<T extends BaseRoute>(RouteClass: new (router: express.Router) => T): this {
+  private registerRoute<T extends BaseRoute>(RouteClass: new (router: express.Router) => T): this {
     const router = express.Router();
     new RouteClass(router);
     this._routes.push(router);

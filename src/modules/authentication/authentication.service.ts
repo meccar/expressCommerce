@@ -16,7 +16,6 @@ import {
 } from '@common/index';
 import { Transaction } from '@sequelize/core';
 import { UserAccount, UserAccountRepository } from '@modules/userAccount';
-import { UserLogin } from './userLogin.model';
 import {
   IUserClaim,
   IUserProvider,
@@ -28,7 +27,7 @@ import {
 import { UserLoginRepository } from './userLogin.repository';
 import { TokenService } from '@modules/tokens/tokens.service';
 import { MfaService } from '@modules/mfa/mfa.service';
-import { UserClaim, UserClaimRepository } from '@modules/claims';
+import { UserClaimRepository } from '@modules/claims';
 import { UserTokenRepository } from '@modules/tokens';
 import { LogActivityRepository } from '@modules/log/logActivity.repository';
 import { LogAuditRepository } from '@modules/log/logAudit.repository';

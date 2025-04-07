@@ -18,17 +18,18 @@ export class SeedRoute extends BaseRoute {
   }
 
   private initializeRoutes(): void {
-    this.publicRoute('post', this.createBaseRole, Api.method.role);
+    this.protectedRoute('post', this.createBaseRole, Api.method.role);
     this.publicRoute('post', this.createAdminAccount, Api.method.user);
   }
 
   private async createBaseRole(req: Request, res: Response): Promise<void> {
     const roleDataAdmin = { ...req.body, name: Roles.Admin };
     const roleDataUser = { ...req.body, name: Roles.User };
+    const user = req.user;
 
     const [adminRole, userRole] = await Promise.all([
-      this.authorizationService.createRole(roleDataAdmin),
-      this.authorizationService.createRole(roleDataUser),
+      this.authorizationService.createRole(roleDataAdmin, user),
+      this.authorizationService.createRole(roleDataUser, user),
     ]);
 
     res.success({ adminRole, userRole }, statusCodes.CREATED);
