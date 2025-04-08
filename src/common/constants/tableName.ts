@@ -7,6 +7,8 @@ export const TableNames = {
   UserToken: 'user-token',
   RoleClaim: 'role-claim',
   UserLogin: 'user-login',
+  Products: 'products',
+  Categories: 'categories',
   LogAudit: 'log-audit',
   LogActivity: 'log-activity',
   LogSystem: 'log-system',
