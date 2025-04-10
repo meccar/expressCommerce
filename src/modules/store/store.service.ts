@@ -1,1 +1,3 @@
-export class StoreService {}
+export class StoreService {
+  constructor() {}
+}
