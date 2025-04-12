@@ -1,4 +1,9 @@
+**/consul/**/data/
 yarn.lock
+*.pem
+*.key
+*.srl
+*.csr
 
 # compiled output
 /dist
